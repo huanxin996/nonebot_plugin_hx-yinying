@@ -55,12 +55,6 @@ OneBot:
 - 默认值：`None`
 - 说明：选择使用银影的模型
 
-### furbar_model
-
-- 类型：`str`
-- 默认值：`None`
-- 说明：选择使用Furbar的模型
-
 ### yinying_token
 
 - 类型：`str`
@@ -74,11 +68,6 @@ OneBot:
 - 默认值：`None`
 - 说明：yinying的api地址
 
-### hx_api_furbar
-
-- 类型：`str`
-- 默认值：`None`
-- 说明：furbar的api地址
 
 ## hx_path
 - 类型：`str`
@@ -100,9 +89,7 @@ OneBot:
 
 ```dotenv
 hx_api_yinying=https://地址
-hx_api_furbar=https://地址
 yinying_model=模型
-furbar_model=模型
 yinying_token=你的token(不带bearer)
 hx_reply_at=False
 yinying_limit=12
