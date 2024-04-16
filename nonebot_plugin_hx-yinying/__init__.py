@@ -42,6 +42,6 @@ none = talk_keyword = on_startswith("h1x")
 
 @none.handle()
 @msg.handle()
-async def _(matcher: Matcher, event: MessageEvent, bot: Bot):
+async def chat(matcher: Matcher, event: MessageEvent, bot: Bot):
     await get_answer(matcher, event, bot)
 

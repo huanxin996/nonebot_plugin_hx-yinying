@@ -1,6 +1,6 @@
 import setuptools
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
@@ -11,17 +11,12 @@ setuptools.setup(
     description="chat with yinying",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pythonml/douyin_image",
+    url="https://github.com/huanxin996/nonebot_plugin_hx_yinying",
     packages=setuptools.find_packages(),
-    install_requires=['Pillow>=5.1.0', 'numpy==1.14.4'],
-    entry_points={
-        'console_scripts': [
-            'douyin_image=douyin_image:main'
-        ],
-    },
-    classifiers=(
+    install_requires=['nonebot2>=2.2.1', 'ujson>=5.9.0', 'httpx>=0.27.0', 'nonebot-adapter-onebot>=2.4.3', 'nonebot_plugin_localstore>=0.6.0', 'pydantic>=2.6.4'],
+    classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-    ),
+    ],
 )

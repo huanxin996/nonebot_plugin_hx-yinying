@@ -12,10 +12,16 @@ hx_config = get_plugin_config(Config)
 from pathlib import Path
 import nonebot_plugin_localstore as store
 
-logger.warning("找不到路径，将使用默认配置")
-history_dir = store.get_data_dir("Hx_YingYing")
-log_dir = Path(f"{history_dir}\yinying_chat\chat").absolute()
-log_dir.mkdir(parents=True, exist_ok=True)
+if hx_config.hx_path == None:
+    logger.warning("找不到配置里的路径，将使用默认配置")
+    history_dir = store.get_data_dir("Hx_YingYing")
+    log_dir = Path(f"{history_dir}\yinying_chat\chat").absolute()
+    log_dir.mkdir(parents=True, exist_ok=True)
+else:
+    logger.success("找到配置里的路径，载入成功")
+    history_dir = store.get_data_dir(f"{hx_config.hx_path}")
+    log_dir = Path(f"{history_dir}\yinying_chat\chat").absolute()
+    log_dir.mkdir(parents=True, exist_ok=True)
 
 #创建用户文件夹
 def create_dir_usr(path):
