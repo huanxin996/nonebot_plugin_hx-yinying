@@ -1,4 +1,3 @@
-__author__ = "HuanXin"
 from nonebot.plugin import PluginMetadata
 from .config import Config
 from nonebot import on_command, on_message ,on_startswith ,get_plugin_config
@@ -42,6 +41,6 @@ none = talk_keyword = on_startswith("h1x")
 
 @none.handle()
 @msg.handle()
-async def chat(matcher: Matcher, event: MessageEvent, bot: Bot):
+async def _(matcher: Matcher, event: MessageEvent, bot: Bot):
     await get_answer(matcher, event, bot)
 
