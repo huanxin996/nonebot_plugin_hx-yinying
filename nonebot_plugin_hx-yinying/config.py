@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class Config(BaseModel):
     # 配置文件版本号
-    hx_version: int = 1
+    hx_version: int = 1.0
 
     # model，如 yinying-v3
     yinying_model: Optional[str] = None

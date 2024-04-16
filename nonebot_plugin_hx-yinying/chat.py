@@ -1,10 +1,9 @@
 # -- coding: utf-8 --**
-__author__ = "HuanXin"
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageEvent
 from nonebot.adapters.onebot.v11 import MessageSegment as MS
 from nonebot.matcher import Matcher
 from html import unescape
-import os,httpx, json, datetime
+import os,httpx, json, datetime, time
 from .config import Config
 from nonebot import get_plugin_config, logger
 from datetime import datetime
@@ -22,6 +21,7 @@ else:
     history_dir = store.get_data_dir(f"{hx_config.hx_path}")
     log_dir = Path(f"{history_dir}\yinying_chat\chat").absolute()
     log_dir.mkdir(parents=True, exist_ok=True)
+
 
 #创建用户文件夹
 def create_dir_usr(path):
@@ -48,6 +48,44 @@ def ai_out(id, text):
         with open(f'{log_dir}\{id}\content.json','w',encoding='utf-8') as file:
             file.write('{"role": "assistant", "content": "' + text + '"}')
 
+#存储对话次数
+def chat_times(id):
+    if os.path.exists(f'{log_dir}/{id}/times.json'):
+        with open(f"{log_dir}/{id}/times.json",'a',encoding='utf-8') as file:
+                with open(f'{log_dir}/{id}/times.json','r',encoding='utf-8') as file:
+                    data = json.load(file)
+                    data["times"] = data["times"] + 1
+                    data.update(file)
+                with open(f'{log_dir}/{id}/times.json','w',encoding='utf-8') as file:
+                    json.dump(data, file)
+    else:
+        with open(f'{log_dir}/{id}/times.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/{id}/times.json','w',encoding='utf-8') as file:
+                    old_data = {}
+                    dt = time.time()
+                    t = int(dt)
+                    data = {"times":0,"time":t}
+                    old_data.update(data)
+                with open(f'{log_dir}/{id}/times.json','w',encoding='utf-8') as file:
+                    json.dump(data, file)
+                    return 0
+
+
+
+#存储对话次数
+def chat_clear(id):
+    with open(f"{log_dir}/{id}/times.json",'a',encoding='utf-8') as file:
+        with open(f'{log_dir}/{id}/times.json','r',encoding='utf-8') as file:
+            data = json.load(file)
+            dt = time.time()
+            t = int(dt)
+            data["times"] = 0
+            data["time"] = t
+            data.update(file)
+        with open(f'{log_dir}/{id}/times.json','w',encoding='utf-8') as file:
+            json.dump(data, file)
+            return True
+     
 
 
 async def gen_chat_text(event: MessageEvent, bot: Bot) -> str:
@@ -108,30 +146,44 @@ async def furrbar(text):
 
 
 async def yinying(text,id):
-    user_in(id,text)
-    headers = {
+    chat_times(id)
+    with open(f'{log_dir}/{id}/times.json','r',encoding='utf-8') as file:
+        data = json.load(file)
+        times_yinying = data["times"]
+        time = data["time"]
+        headers = {
         'Content-type': 'application/json',
         'Authorization': f'Bearer {hx_config.yinying_token}'
     }
-    data = {
+        data = {
                 'appId':'huanxinbot',
-                'chatId':'huanxinbot-3485462167-ces',
+                'chatId':f'huanxinbot-{id}-{time}',
                 'model':f'{hx_config.yinying_model}',
                 'variables':{'nickName': '幻歆','furryCharacter': '一只猫猫龙'},
                 'message':f'{text}'
                 }
-    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=60, write=20, pool=30)) as client:
-            back = await client.post(hx_config.hx_api_yinying, headers=headers, json=data)
-    try:
-            back = back.json()
-    except json.decoder.JSONDecodeError as e:
-            back_msg = f"请求接口报错！\n返回结果：{e}"
-            return back_msg
-    try:
-        back_msg = back['choices'][0]['message']['content']
-    except Exception as e:
-        back_msg = back
-    return back_msg
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=60, write=20, pool=30)) as client:
+                back = await client.post(hx_config.hx_api_yinying, headers=headers, json=data)
+        try:
+                back = back.json()
+        except json.decoder.JSONDecodeError as e:
+                back_msg = f"请求接口报错！\t返回结果：{e}"
+                return back_msg
+        try:
+            if times_yinying>=hx_config.yinying_limit:
+                msg = back['choices'][0]['message']['content']
+                back_msg = f"[对话次数达到上限，即将清空缓存.]\t{msg}"
+                user_in(id,text)
+                ai_out(id,msg)
+                chat_clear(id)
+            else:
+                msg = back['choices'][0]['message']['content']
+                back_msg = f"[{times_yinying}|{hx_config.yinying_limit}]{msg}"
+                user_in(id,text)
+                ai_out(id,msg)
+        except Exception as e:
+                back_msg = back
+        return back_msg
     
 
 
@@ -141,12 +193,10 @@ async def get_answer(matcher: Matcher, event: MessageEvent, bot: Bot):
     try:
         back_msg = str(await yinying(text,id))
         msg = back_msg.replace("\n","\\n")
-        ai_out(id,msg)
         await send_with_at(matcher,msg)
     except httpx.HTTPError as e:
-        back_msg = f"请求接口报错！\n返回结果：{e}"
+        back_msg = f"请求接口报错！\t返回结果：{e}"
         await finish_with_at(matcher, back_msg)
-
 
 
 
