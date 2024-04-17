@@ -28,19 +28,21 @@ __plugin_meta__ = PluginMetadata(
         "通过QQ艾特机器人来进行对话"
     ),
     type="application",
-    homepage="https://github.com/huanxin996/Hx_bot",
+    homepage="https://github.com/huanxin996/nonebot_plugin_hx-yinying",
     config=Config,
-    supported_adapters=None,
+    supported_adapters={
+        "~onebot.v11"
+    },
 )
 
 
 
 
-msg = on_message(rule=to_me(), priority=0, block=True)
-none = talk_keyword = on_startswith("h1x")
+msg_at = on_message(rule=to_me(), priority=0, block=True)
+msg_ml = on_command("hx", aliases={"幻歆", "chat"}, priority=0, block=True)
 
-@none.handle()
-@msg.handle()
+@msg_ml.handle()
+@msg_at.handle()
 async def _(matcher: Matcher, event: MessageEvent, bot: Bot):
     await get_answer(matcher, event, bot)
 

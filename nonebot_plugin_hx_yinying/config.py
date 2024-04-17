@@ -11,13 +11,11 @@ class Config(BaseModel):
 
     # model，如 yinying-v3
     yinying_model: Optional[str] = None
-    furbar_model: Optional[str] = None
 
     yinying_token: Optional[str] = None
 
     # api地址
     hx_api_yinying: Optional[str] = None
-    hx_api_furbar: Optional[str] = None
     hx_path: Optional[str] = None
     # bot回复消息时是否艾特
     hx_reply_at: bool = False

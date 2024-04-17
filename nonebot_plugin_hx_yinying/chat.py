@@ -5,10 +5,11 @@ from nonebot.matcher import Matcher
 from html import unescape
 import os,httpx, json, datetime, time
 from .config import Config
-from nonebot import get_plugin_config, logger
+from nonebot import get_plugin_config, logger, require
 from datetime import datetime
 hx_config = get_plugin_config(Config)
 from pathlib import Path
+require("nonebot_plugin_localstore")
 import nonebot_plugin_localstore as store
 
 if hx_config.hx_path == None:
@@ -64,7 +65,7 @@ def chat_times(id):
                     old_data = {}
                     dt = time.time()
                     t = int(dt)
-                    data = {"times":0,"time":t}
+                    data = {"times":0,"time":t,"character":"是一只猫猫龙哦"}
                     old_data.update(data)
                 with open(f'{log_dir}/{id}/times.json','w',encoding='utf-8') as file:
                     json.dump(data, file)
@@ -72,7 +73,7 @@ def chat_times(id):
 
 
 
-#存储对话次数
+#清楚对话id
 def chat_clear(id):
     with open(f"{log_dir}/{id}/times.json",'a',encoding='utf-8') as file:
         with open(f'{log_dir}/{id}/times.json','r',encoding='utf-8') as file:
@@ -122,6 +123,17 @@ def get_id(event: MessageEvent) -> str:
         id = f"{event.user_id}"
     return id
 
+async def get_nick(bot:Bot,event: MessageEvent) -> str:
+    """获取昵称"""
+    qq = event.user_id
+    info = await bot.get_stranger_info(user_id=int(qq))
+    nick = info["nickname"]
+    if nick is None:
+        nick = None
+    else:
+        nick = nick
+    return nick
+
 async def send_with_at(matcher: Matcher, content):
     await matcher.send(content, at_sender=hx_config.hx_reply_at)
 
@@ -129,27 +141,13 @@ async def send_with_at(matcher: Matcher, content):
 async def finish_with_at(matcher: Matcher, content):
     await matcher.finish(content, at_sender=hx_config.hx_reply_at)
 
-async def furrbar(text):
-    data = {"model": f"{hx_config.furbar_model}",
-            "messages": [{"role": "system","content": "你是一只龙"},
-                         {"role":"user","content":text}]
-            }
-    json_data = json.dumps(data)
-    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=60, write=20, pool=30)) as client:
-        res = await client.post(hx_config.hx_api_furbar, json=data)
-        res = res.json()
-    try:
-        res_raw = res['choices'][0]['message']['content']
-    except Exception as e:
-        res_raw = res
-    return res_raw
 
-
-async def yinying(text,id):
+async def yinying(text,id,nick):
     chat_times(id)
     with open(f'{log_dir}/{id}/times.json','r',encoding='utf-8') as file:
         data = json.load(file)
         times_yinying = data["times"]
+        character = data["character"]
         time = data["time"]
         headers = {
         'Content-type': 'application/json',
@@ -159,7 +157,7 @@ async def yinying(text,id):
                 'appId':'huanxinbot',
                 'chatId':f'huanxinbot-{id}-{time}',
                 'model':f'{hx_config.yinying_model}',
-                'variables':{'nickName': '幻歆','furryCharacter': '一只猫猫龙'},
+                'variables':{'nickName': f'{nick}','furryCharacter': f'{character}'},
                 'message':f'{text}'
                 }
         async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=60, write=20, pool=30)) as client:
@@ -190,15 +188,13 @@ async def yinying(text,id):
 async def get_answer(matcher: Matcher, event: MessageEvent, bot: Bot):
     text = unescape(await gen_chat_text(event, bot))
     id = get_id(event)
+    nick = await get_nick(bot,event)
     try:
-        back_msg = str(await yinying(text,id))
+        back_msg = str(await yinying(text,id,nick))
         msg = back_msg.replace("\n","\\n")
         await send_with_at(matcher,msg)
     except httpx.HTTPError as e:
         back_msg = f"请求接口报错！\t返回结果：{e}"
         await finish_with_at(matcher, back_msg)
-
-
-
 
 

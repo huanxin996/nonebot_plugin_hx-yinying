@@ -93,5 +93,8 @@ yinying_model=模型
 yinying_token=你的token(不带bearer)
 hx_reply_at=False
 yinying_limit=12
-'
 ```
+
+
+<!-- ALL-CONTRIBUTORS-LIST: START - Do not remove or modify this section -->
+<!-- ALL-CONTRIBUTORS-LIST:END -->
