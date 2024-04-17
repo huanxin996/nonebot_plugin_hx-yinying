@@ -4,7 +4,7 @@
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
  * @Author         : huanxin
  * @Date           : 2024-4-17 00:04:25
- * @LastEditors    : yanyongyu
+ * @LastEditors    : huanxin
  * @LastEditTime   : 2024-4-17 00:04:25
  * @Description    : None
  * @GitHub         : https://github.com/huanxin
@@ -99,12 +99,8 @@ yinying_limit=12
 ```
 
 
-<!-- ALL-CONTRIBUTORS-LIST: START - Do not remove or modify this section -->
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
 ## Contributors ✨
 
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
@@ -112,5 +108,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
 <!-- ALL-CONTRIBUTORS-LIST:END -->
-
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+# Add new contributor <username>, who made a contribution of type <contribution>
+all-contributors add <username> <contribution>
+# Example:
+all-contributors add jfmengels code,doc
