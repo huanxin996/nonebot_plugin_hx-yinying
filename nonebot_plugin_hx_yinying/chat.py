@@ -1,5 +1,5 @@
 # -- coding: utf-8 --**
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageEvent
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageEvent ,MessageSegment
 from nonebot.adapters.onebot.v11 import MessageSegment as MS
 from nonebot.matcher import Matcher
 from html import unescape
@@ -135,13 +135,12 @@ async def get_nick(bot:Bot,event: MessageEvent) -> str:
         nick = nick
     return nick
 
-async def send_with_at(matcher: Matcher, content):
-    await matcher.send(content, at_sender=hx_config.hx_reply_at)
 
-
-async def finish_with_at(matcher: Matcher, content):
-    await matcher.finish(content, at_sender=hx_config.hx_reply_at)
-
+async def send_msg(matcher: Matcher, event: MessageEvent, content):
+    if hx_config.hx_reply == True:
+        await matcher.send(MessageSegment.reply(event.message_id) + content)
+    else:
+        await matcher.send(content, at_sender=hx_config.hx_reply_at)
 
 async def yinying(text,id,nick):
     chat_times(id)
@@ -193,7 +192,7 @@ async def get_answer(matcher: Matcher, event: MessageEvent, bot: Bot):
     try:
         back_msg = str(await yinying(text,id,nick))
         msg = back_msg.replace("\n","\\n")
-        await send_with_at(matcher,msg)
+        await send_msg(matcher,event,msg)
     except httpx.HTTPError as e:
         back_msg = f"请求接口报错！\t返回结果：{e}"
-        await finish_with_at(matcher, back_msg)
+        await send_msg(matcher, back_msg)

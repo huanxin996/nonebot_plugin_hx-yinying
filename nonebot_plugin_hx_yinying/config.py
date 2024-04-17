@@ -19,6 +19,8 @@ class Config(BaseModel):
     hx_path: Optional[str] = None
     # bot回复消息时是否艾特
     hx_reply_at: bool = False
+    #是否回复消息
+    hx_reply: bool = False
 
     yinying_limit: int = 12
 

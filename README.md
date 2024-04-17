@@ -77,10 +77,16 @@ OneBot:
 - 默认值：`None`
 - 说明：银影对话的用户数据存储路径(不写将使用默认配置)
 
+## hx_reply
+- 类型：`bool`
+- 默认值：`False`
+- 说明：bot发送chat消息时是否回复
+- 注意：该项启用时hx_reply_at将被忽略
+
 ## hx_reply_at
 - 类型：`bool`
 - 默认值：`False`
-- 说明：bot回复消息是否艾特
+- 说明：bot发送chat消息时不回复时是否艾特
 
 ## yinying_limit
 - 类型：`int`
