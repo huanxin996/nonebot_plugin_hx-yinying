@@ -108,7 +108,4 @@ yinying_limit=12
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
 <!-- ALL-CONTRIBUTORS-LIST:END -->
-# Add new contributor <username>, who made a contribution of type <contribution>
-all-contributors add <username> <contribution>
-# Example:
-all-contributors add jfmengels code,doc
+
