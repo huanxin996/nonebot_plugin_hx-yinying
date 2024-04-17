@@ -60,6 +60,7 @@ def chat_times(id):
                 with open(f'{log_dir}/{id}/times.json','w',encoding='utf-8') as file:
                     json.dump(data, file)
     else:
+        create_dir_usr(f"{log_dir}\{id}")
         with open(f'{log_dir}/{id}/times.json','w',encoding='utf-8') as file:
                 with open(f'{log_dir}/{id}/times.json','w',encoding='utf-8') as file:
                     old_data = {}
@@ -196,5 +197,3 @@ async def get_answer(matcher: Matcher, event: MessageEvent, bot: Bot):
     except httpx.HTTPError as e:
         back_msg = f"请求接口报错！\t返回结果：{e}"
         await finish_with_at(matcher, back_msg)
-
-
