@@ -3,15 +3,10 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
-#include<atltime.h>
-int main(){
-  CTime time=CTime::GetCurrentTime();
-	printf("%04d/%02d/%02d %02d:%02d:%02d\n",time.GetYear(),time.GetMonth(),time.GetDay(),time.GetHour(),time.GetMinute(),time.GetSecond());
-}
  * @Author         : huanxin
  * @Date           : 2024-4-17 00:04:25
  * @LastEditors    : huanxin
- * @LastEditTime   : '`r paste("Updated on", Sys.Date())`'
+ * @LastEditTime   : `r paste("Updated on", Sys.Date())`
  * @Description    : None
  * @GitHub         : https://github.com/huanxin
 -->
