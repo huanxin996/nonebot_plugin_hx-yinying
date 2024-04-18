@@ -3,12 +3,12 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
- * @Author         : huanxin
+ * @Author         : huanxin996
  * @Date           : 2024-4-17
- * @LastEditors    : huanxin
+ * @LastEditors    : huanxin996
  * @LastEditTime   : 2024-4-18
  * @Description    : None
- * @GitHub         : https://github.com/huanxin
+ * @GitHub         : https://github.com/huanxin996
 -->
 
 <!-- markdownlint-disable MD033 MD036 MD041 -->
@@ -29,7 +29,7 @@ _✨ Hx vs YinYing(在线与银影进行对话的插件) ✨_
   <a href="https://raw.githubusercontent.com/cscs181/QQ-Github-Bot/master/LICENSE">
     <img src="https://img.shields.io/github/license/cscs181/QQ-Github-Bot.svg" alt="license">
   </a>
-  <a href="https://pypi.python.org/pypi/nonebot-plugin-status">
+  <a href="https://pypi.python.org/pypi/nonebot-plugin-hx-yinying">
     <img src="https://img.shields.io/pypi/v/nonebot-plugin-status.svg" alt="pypi">
   </a>
   <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="python">
