@@ -1,4 +1,4 @@
-__author__ = "HuanXin"
+yinying_model: Optional[str] = None__author__ = "HuanXin"
 from typing import Optional
 
 import nonebot
@@ -8,7 +8,8 @@ from pydantic import BaseModel
 class Config(BaseModel):
     # 配置文件版本号
     hx_version: int = 1
-
+    # 你的appid
+    yinying_appid: Optional[str] = None
     # model，如 yinying-v3
     yinying_model: Optional[str] = None
 
