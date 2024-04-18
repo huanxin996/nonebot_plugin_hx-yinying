@@ -30,7 +30,7 @@ _✨ Hx vs YinYing(在线与银影进行对话的插件) ✨_
     <img src="https://img.shields.io/github/license/cscs181/QQ-Github-Bot.svg" alt="license">
   </a>
   <a href="https://pypi.python.org/pypi/nonebot-plugin-hx-yinying">
-    <img src="https://pypi.python.org/pypi/nonebot-plugin-hx-yinying.svg" alt="pypi">
+    <img src="https://skin.huanxinbot.com/api/pypi.svg" alt="pypi">
   </a>
   <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="python">
 </p>
