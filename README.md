@@ -6,7 +6,7 @@
  * @Author         : huanxin996
  * @Date           : 2024-4-17
  * @LastEditors    : huanxin996
- * @LastEditTime   : 2024-4-18
+ * @LastEditTime   : 2024-4-19
  * @Description    : None
  * @GitHub         : https://github.com/huanxin996
 -->
@@ -86,6 +86,7 @@ OneBot:
 - 类型：`str`
 - 默认值：`None`
 - 说明：选择使用银影的模型
+- 注意 该配置项即将移除（转为插件内配置！）
 
 ## hx_path
 - 类型：`str`

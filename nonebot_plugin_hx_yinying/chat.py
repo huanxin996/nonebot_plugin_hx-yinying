@@ -23,6 +23,23 @@ else:
     log_dir = Path(f"{history_dir}\yinying_chat").absolute()
     log_dir.mkdir(parents=True, exist_ok=True)
 
+#初始化log记录
+def log_in()-> str:
+    if os.path.exists(f"{log_dir}/chat/all_log.json"):
+        with open(f'{log_dir}/chat/all_log.json','r',encoding='utf-8') as file:
+            json_data = json.load(file)
+            return json_data
+    else:
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
+            json_data = {}
+            package = {}
+            history_package = []
+            package['rule'] = '幻歆'
+            package['msg'] = '初始化log记录'
+            history_package.append(package)
+            json_data['114514'] = history_package
+            json.dump(json_data,file)
+            return json_data
 
 #创建用户文件夹
 def create_dir_usr(path):
@@ -31,66 +48,76 @@ def create_dir_usr(path):
 
 #用户输入
 def user_in(id, text):
-    if os.path.exists(f"{log_dir}\chat\{id}\content.json"):
-        with open(f"{log_dir}\chat\{id}\content.json",'a',encoding='utf-8') as file:
-            file.write(',\n{"role": "user", "content": "' + text + '"}')
-    else:
-        create_dir_usr(f"{log_dir}\chat\{id}")
-        with open(f"{log_dir}\chat\{id}\content.json",'w',encoding='utf-8') as file:
-            file.write('{"role": "user", "content": "' + text + '"}')
+    data = log_in()
+    if f'{id}' in data: 
+        id_log = data[f'{id}']['log']
+        package = {}
+        package['rule'] = 'user'
+        package['msg'] = f'{text}'
+        id_log.append(package)
+        data[f'{id}']['log'] = id_log
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
+            json.dump(data,file)
+    else : 
+        package = {}
+        log = {}
+        history_package = []
+        package['rule'] = 'user'
+        package['msg'] = f'{text}'
+        history_package.append(package)
+        log['log'] = history_package
+        dt = time.time()
+        t = int(dt)
+        log['time'] = t
+        data[f'{id}'] = log
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
+            json.dump(data,file)
 
 #AI输出
 def ai_out(id, text):
-    if os.path.exists(f"{log_dir}\chat\{id}\content.json"):
-        with open(f'{log_dir}\chat\{id}\content.json','a',encoding='utf-8') as file:
-            file.write(',\n{"role": "assistant", "content": "' + text + '"}')
+    data = log_in()
+    if f'{id}' in data: 
+        id_log = data[f'{id}']['log']
+        package = {}
+        package['rule'] = 'ai'
+        package['msg'] = f'{text}'
+        id_log.append(package)
+        data[f'{id}']['log'] = id_log
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
+            json.dump(data,file)
+    else : 
+        package = {}
+        log = {}
+        history_package = []
+        package['rule'] = 'ai'
+        package['msg'] = f'{text}'
+        history_package.append(package)
+        log['log'] = history_package
+        dt = time.time()
+        t = int(dt)
+        log['time'] = t
+        data[f'{id}'] = log
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
+            json.dump(data,file)
+
+#检测对话次数
+def chat_times(id) -> str:
+    data = log_in()
+    history = data[f"{id}"]['log']
+    times = len(history)/2 +0.5
+    if times >= hx_config.yinying_limit:
+        dt = time.time()
+        t = int(dt)
+        data[f'{id}']['time'] = t
+        data[f"{id}"]['log'] = []
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
+            json.dump(data,file)
+            return 0
     else:
-        create_dir_usr(f"{log_dir}\chat\{id}")
-        with open(f'{log_dir}\chat\{id}\content.json','w',encoding='utf-8') as file:
-            file.write('{"role": "assistant", "content": "' + text + '"}')
+        return times
 
-#存储对话次数
-def chat_times(id):
-    if os.path.exists(f'{log_dir}/chat/{id}/times.json'):
-        with open(f"{log_dir}/chat/{id}/times.json",'a',encoding='utf-8') as file:
-                with open(f'{log_dir}/chat/{id}/times.json','r',encoding='utf-8') as file:
-                    data = json.load(file)
-                    data["times"] = data["times"] + 1
-                    data.update(file)
-                with open(f'{log_dir}/chat/{id}/times.json','w',encoding='utf-8') as file:
-                    json.dump(data, file)
-    else:
-        create_dir_usr(f"{log_dir}\chat\{id}")
-        with open(f'{log_dir}/chat/{id}/times.json','w',encoding='utf-8') as file:
-                with open(f'{log_dir}/chat/{id}/times.json','w',encoding='utf-8') as file:
-                    old_data = {}
-                    dt = time.time()
-                    t = int(dt)
-                    data = {"times":0,"time":t,"character":"是一只猫猫龙哦"}
-                    old_data.update(data)
-                with open(f'{log_dir}/chat/{id}/times.json','w',encoding='utf-8') as file:
-                    json.dump(data, file)
-                    return 0
-
-
-
-#清楚对话id
-def chat_clear(id):
-    with open(f"{log_dir}/chat/{id}/times.json",'a',encoding='utf-8') as file:
-        with open(f'{log_dir}/chat/{id}/times.json','r',encoding='utf-8') as file:
-            data = json.load(file)
-            dt = time.time()
-            t = int(dt)
-            data["times"] = 0
-            data["time"] = t
-            data.update(file)
-        with open(f'{log_dir}/chat/{id}/times.json','w',encoding='utf-8') as file:
-            json.dump(data, file)
-            return True
-     
-
-
-async def gen_chat_text(event: MessageEvent, bot: Bot) -> str:
+#获取纯文本
+async def gen_chat_text(event, bot: Bot) -> str:
     msg = ""
     for seg in event.message:
         if seg.is_text():
@@ -115,8 +142,23 @@ async def gen_chat_text(event: MessageEvent, bot: Bot) -> str:
                         msg
     return msg
 
+#手动刷新对话
+def clear_id(id) -> str:
+    data = log_in()
+    dt = time.time()
+    t = int(dt)
+    data[f'{id}']['time'] = t
+    data[f'{id}']['log'] = []
+    try:
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
+            json.dump(data,file)
+            zt = True
+    except Exception as e:
+            zt = False
+    return zt
 
-def get_id(event: MessageEvent) -> str:
+#获取用户id
+def get_id(event) -> str:
     """获取会话id"""
     if isinstance(event, GroupMessageEvent):
             id = f"{event.user_id}"
@@ -124,7 +166,8 @@ def get_id(event: MessageEvent) -> str:
         id = f"{event.user_id}"
     return id
 
-async def get_nick(bot:Bot,event: MessageEvent) -> str:
+#获取用户昵称
+async def get_nick(bot,event) -> str:
     """获取昵称"""
     qq = event.user_id
     info = await bot.get_stranger_info(user_id=int(qq))
@@ -135,8 +178,7 @@ async def get_nick(bot:Bot,event: MessageEvent) -> str:
         nick = nick
     return nick
 
-
-
+#初始化传参（整理data）
 def data_in(id,text,nick) -> str:
     """构建data"""
     with open(f'{log_dir}/chat/{id}/times.json','r',encoding='utf-8') as user,\
@@ -212,64 +254,80 @@ def data_in(id,text,nick) -> str:
                 json_data = False
         return packages_data
 
-            
-
-
-
-
-async def send_msg(matcher: Matcher, event: MessageEvent, content):
+#全局发送消息函数，发送消息直接await就行
+async def send_msg(matcher, event, content):
     if hx_config.hx_reply == True:
         await matcher.send(MessageSegment.reply(event.message_id) + content)
     else:
         await matcher.send(content, at_sender=hx_config.hx_reply_at)
 
+#主要构建
 async def yinying(id,text,nick):
-    chat_times(id)
-    with open(f'{log_dir}/chat/{id}/times.json','r',encoding='utf-8') as file:
-        data = json.load(file)
-        times_yinying = data["times"]
-        headers = {
+    headers = {
         'Content-type': 'application/json',
         'Authorization': f'Bearer {hx_config.yinying_token}'
     }
-        osu = data_in(id,text,nick)
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=60, write=20, pool=30)) as client:
-                back = await client.post(hx_config.hx_api_yinying, headers=headers, json=osu)
-        try:
-                back = back.json()
-        except json.decoder.JSONDecodeError as e:
-                back_msg = f"json解析报错！\n返回结果：{e}"
-                return back_msg
-        try:
-            if times_yinying>=hx_config.yinying_limit:
-                msg = back['choices'][0]['message']['content']
-                back_msg = f"[对话次数达到上限，即将清空缓存.]\n{msg}"
-                user_in(id,text)
-                ai_out(id,msg)
-                chat_clear(id)
-            else:
-                msg = back['choices'][0]['message']['content']
-                back_msg = f"[{times_yinying}|{hx_config.yinying_limit}]\n{msg}"
-                user_in(id,text)
-                ai_out(id,msg)
-        except Exception as e:
-                back_msg = f"{back} \n\n\n{osu}"
-        return back_msg
-    
+    osu = data_in(id,text,nick)
+    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=60, write=20, pool=30)) as client:
+            back = await client.post(hx_config.hx_api_yinying, headers=headers, json=osu)
+    try:
+            back = back.json()
+    except json.decoder.JSONDecodeError as e:
+            back_msg = f"json解析报错！\n返回结果：{e}"
+            return back_msg
+    try:
+        times = chat_times(id)
+        if times >= hx_config.yinying_limit or times == 0:
+            msg = back['choices'][0]['message']['content']
+            text0 = msg.replace("\n","\\n")
+            text1 = text0.replace("'","\\'")
+            text = text1.replace('"','')
+            ai_out(id,text)
+            back_msg = f"{msg}\n[对话次数达到上限，即将清空缓存.]"
+        else:
+            msg = back['choices'][0]['message']['content']
+            text0 = msg.replace("\n","\\n")
+            text1 = text0.replace("'","\\'")
+            text = text1.replace('"','')
+            ai_out(id,text)
+            back_msg = f"{msg}\n[{times}|{hx_config.yinying_limit}]"
+    except Exception as e:
+            back_msg = f"{back} \n\n\n{osu}\n\n\n未知错误，错误定位于#主要构建函数。"
+    return back_msg
 
-
-async def get_answer(matcher: Matcher, event: MessageEvent, bot: Bot):
+#获取回复（被艾特）
+async def get_answer_at(matcher, event, bot):
     text = unescape(await gen_chat_text(event, bot))
-    id = get_id(event)
-    nick = await get_nick(bot,event)
     if  text == "" or text is None or text == "/hx" or text == "/chat":
         msg = "诶唔，你叫我是有什么事嘛？"
         await send_msg(matcher,event,msg)
     else:
         try:
+            id = get_id(event)
+            nick = await get_nick(bot,event)
+            user_in(id,text)
             back_msg = str(await yinying(id,text,nick))
             msg = back_msg.replace("\\n","\n")
             await send_msg(matcher,event,msg)
         except httpx.HTTPError as e:
             back_msg = f"请求接口报错！\n返回结果：{e}"
-            await send_msg(matcher, back_msg)
+            await send_msg(matcher, event, back_msg)
+
+#获取回复（指令触发）
+async def get_answer_ml(matcher, event ,bot ,msg):
+    text = msg.extract_plain_text()
+    if not text == "" or text == None:
+        try:
+            id = get_id(event)
+            nick = await get_nick(bot,event)
+            user_in(id,text)
+            back_msg = str(await yinying(id,text,nick))
+            msg = back_msg.replace("\\n","\n")
+            await send_msg(matcher,event,msg)
+        except httpx.HTTPError as e:
+            back_msg = f"请求接口报错！\n返回结果：{e}"
+            await send_msg(matcher, event, back_msg)
+    else:
+        msg = "诶唔，你叫我是有什么事嘛？"
+        await send_msg(matcher,event,msg)
+
