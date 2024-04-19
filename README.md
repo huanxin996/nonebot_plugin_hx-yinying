@@ -51,7 +51,7 @@ OneBot:
 > [!WARNING]
 > GitHub 仓库中的文档为最新 DEV 版本，配置方式请参考 [PyPI](https://pypi.python.org/pypi/nonebot-plugin-hx-yinying) 上的文档。
 
-> [!INFO]
+> [!WARNING]
 > 秩乱(乱乱)的联系方式如下，QQ:1660466270，官方qq群聊:175334224 [官网链接](https://chat.wingmark.cn/) .
 
 > [!WARNING]
