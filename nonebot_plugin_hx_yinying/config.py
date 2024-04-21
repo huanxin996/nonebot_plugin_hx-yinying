@@ -6,8 +6,8 @@ from pydantic import BaseModel
 
 
 class Config(BaseModel):
-    # 配置文件版本号
-    hx_version: Optional[str] = None
+    # 插件版本号勿动！！！！
+    hx_version: Optional[str] = "0.0.9"
     # 你的appid
     yinying_appid: Optional[str] = None
     # model，如 yinying-v3

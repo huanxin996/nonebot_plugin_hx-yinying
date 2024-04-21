@@ -6,7 +6,7 @@
  * @Author         : huanxin996
  * @Date           : 2024-4-17
  * @LastEditors    : huanxin996
- * @LastEditTime   : 2024-4-19
+ * @LastEditTime   : 2024-4-22
  * @Description    : None
  * @GitHub         : https://github.com/huanxin996
 -->
@@ -74,14 +74,14 @@ OneBot:
 - 重要：必填
 
 
-### hx_api_yinying
+### hx_api_yinying(已于0.0.7版本移除)
 
 - 类型：`str`
 - 默认值：`None`
 - 说明：yinying的api地址
 - 重要：必填
 
-### yinying_model
+### yinying_model(已于0.0.7版本移除)
 
 - 类型：`str`
 - 默认值：`None`
@@ -93,18 +93,18 @@ OneBot:
 - 默认值：`None`
 - 说明：银影对话的用户数据存储路径(不写将使用默认配置)
 
-## hx_reply
+## hx_reply(已于0.0.7版本移除)
 - 类型：`bool`
 - 默认值：`False`
 - 说明：bot发送chat消息时是否回复
 - 注意：该项启用时hx_reply_at将被忽略
 
-## hx_reply_at
+## hx_reply_at(已于0.0.7版本移除)
 - 类型：`bool`
 - 默认值：`False`
 - 说明：bot发送chat消息时不回复时是否艾特
 
-## yinying_limit
+## yinying_limit(已于0.0.7版本移除)
 - 类型：`int`
 - 默认值：`12`
 - 说明：对于银影对话限制的次数
@@ -113,12 +113,8 @@ OneBot:
 配置文件示例（默认模板）
 
 ```dotenv
-hx_api_yinying=https://地址
 yinying_appid=你的appid
 yinying_token=你的token(不带bearer)
-yinying_model=模型
-hx_reply_at=False
-yinying_limit=12
 ```
 
 
