@@ -35,6 +35,17 @@ _✨ Hx vs YinYing(在线与银影进行对话的插件) ✨_
   <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="python">
 </p>
 
+## 安装
+pip安装
+```dotenv
+pip install nonebot-plugin-hx-yinying
+```
+nb plugin安装
+```dotenv
+nb plugin install nonebot-plugin-hx-yinying
+```
+
+
 ## 使用方式
 
 通用:

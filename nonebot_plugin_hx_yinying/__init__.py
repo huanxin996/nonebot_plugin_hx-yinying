@@ -14,7 +14,7 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.log import default_filter, logger, logger_id, sys
 from nonebot.matcher import Matcher
 from nonebot.rule import to_me
-import json,datetime,os
+import json,datetime,os,sys
 from nonebot.adapters.onebot.v11.event import PrivateMessageEvent, GroupMessageEvent
 from .chat import (
     get_id,
@@ -32,6 +32,7 @@ from .chat import (
     json_get,
     path_in,
     update_hx,
+    get_config_global,
 )
 
 hx_config = get_plugin_config(Config)
@@ -45,6 +46,12 @@ else:
     logger.warning("【Hx】正在自动更新中")
     os.system(f'pip install nonebot-plugin-hx-yinying=={new_verision}')
     logger.success(f"[Hx_YinYing]更新完成！当前版本为{new_verision}")
+
+if hx_config.yinying_appid == None or hx_config.yinying_token == None:
+    logger.opt(colors=True).effor("未设置核心配置？！,请检查你配置里的yinying_appid和yinying_token")
+    sys.exit()
+else:
+    logger.opt(colors=True).success("【Hx】加载核心配置成功")
 
 __plugin_meta__ = PluginMetadata(
     name="Hx_YinYing",
@@ -64,29 +71,33 @@ msg_at = on_message(rule=to_me(), priority=0, block=True)
 msg_ml = on_command("hx", aliases={"chat"}, priority=0, block=True)
 clear =  on_command("刷新对话", aliases={"clear"}, priority=0, block=True)
 history_get = on_command("导出对话", aliases={"getchat"}, priority=0, block=True)
+set_get_global = on_command("导出全局设置", aliases={"getset_global"}, priority=0, block=True)
 model_list = on_command("模型列表", aliases={"modellist","chat模型列表"}, priority=0, block=True)
 model_handoff = on_command("切换模型", aliases={"qhmodel","切换chat模型"}, priority=0, block=True)
 rule_reply = on_command("对话回复", aliases={"chat回复"}, priority=0, block=True)
+rule_reply_at = on_command("回复艾特", aliases={"chat回复艾特"}, priority=0, block=True)
+private = on_command("私聊回复", aliases={"私聊chat"}, priority=0, block=True)
 ces = on_command("ces", aliases={"ces"}, priority=0, block=True)
 
 @msg_at.handle()
 async def at(matcher: Matcher, event: MessageEvent, bot: Bot, events:Event):
     if isinstance(events, GroupMessageEvent):
         await get_answer_at(matcher, event, bot)
-    else:
+    elif json_get(config_in_global(),"private"):
         await get_answer_at(matcher, event, bot)
 
 @msg_ml.handle()
 async def ml(matcher: Matcher, event: MessageEvent, bot: Bot, events:Event, msg: Message = CommandArg()):
     if isinstance(events, GroupMessageEvent):
         await get_answer_ml(matcher, event, bot ,msg)
-    else:
+    elif json_get(config_in_global(),"private"):
         await get_answer_ml(matcher, event, bot ,msg)
 
 @clear.handle()
-async def clear(matcher: Matcher, event: MessageEvent):
+async def clear(matcher: Matcher,bot:Bot, event: MessageEvent):
     id = get_id(event)
-    if clear_id(id):
+    nick = await get_nick(bot,event)
+    if clear_id(id,nick):
         msg = "已刷新对话！"
         await send_msg(matcher, event, msg)
     else:
@@ -99,7 +110,7 @@ async def history(bot: Bot, event: MessageEvent,events: Event):
     msg_list = await get_history(id,bot,event)
     if isinstance(events, GroupMessageEvent):
         await bot.send_group_forward_msg(group_id=event.group_id, messages=msg_list)  # type: ignore
-    else:
+    elif json_get(config_in_global(),"private"):
         await bot.send_private_forward_msg(user_id=id, messages=msg_list)  # type: ignore
 
 @model_list.handle()
@@ -146,32 +157,110 @@ async def handoff(matcher: Matcher, bot: Bot, event: MessageEvent,events: Event,
         await send_msg(matcher,event,msg)
 
 @rule_reply.handle()
-async def handoff(matcher: Matcher, bot: Bot, event: MessageEvent,events: Event, msg: Message = CommandArg()):
+async def reply(matcher: Matcher, bot: Bot, event: MessageEvent, msg: Message = CommandArg()):
     text = msg.extract_plain_text()
     if not text == "" or text == None:
         if text == "开启" or text == "on" or text == "开":
-            if global_config["reply"] == True:
+            config_global = config_in_global()
+            zt_reply = json_get(config_global,"reply")
+            if zt_reply == True:
                 msg = "请勿重复开启对话回复哦"
                 await send_msg(matcher,event,msg)
             else:
-                global_config = config_in_global()
-                global_config["reply"] == True
+                config_global["reply"] = True
                 with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
-                    json.dump(global_config,file)
-                    msg = "对话回复已开启"
-                    await send_msg(matcher,event,msg)
+                    json.dump(config_global,file) 
+                msg = "对话回复已开启"
+                await send_msg(matcher,event,msg)
         elif text == "关闭" or text == "off" or text == "关":
-            if global_config["reply"] == False:
-                msg = "请勿重复开启对话回复哦"
+            config_global = config_in_global()
+            zt_reply = json_get(config_global,"reply")
+            if zt_reply == False:
+                msg = "请勿重复关闭对话回复哦"
                 await send_msg(matcher,event,msg)
             else:
-                global_config = config_in_global()
-                global_config["reply"] == False
+                config_global["reply"] = False
                 with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
-                    json.dump(global_config,file)
-                    msg = "对话回复已关闭"
-                    await send_msg(matcher,event,msg)
+                    json.dump(config_global,file)
+                msg = "对话回复已关闭"
+                await send_msg(matcher,event,msg)
     else:
-        msg = "请注意，正确的格式应该是\n对话回复开启"
+        msg = f"请注意，正确的格式应该是\n对话回复{text}"
         await send_msg(matcher,event,msg)
 
+@rule_reply_at.handle()
+async def reply_at(matcher: Matcher, event: MessageEvent, msg: Message = CommandArg()):
+    text = msg.extract_plain_text()
+    if not text == "" or text == None:
+        if json_get(config_in_global(),"reply") == False:
+            if text == "开启" or text == "on" or text == "开":
+                config_global = config_in_global()
+                zt_reply = json_get(config_global,"reply_at")
+                if zt_reply == True:
+                    msg = "请勿重复开启回复艾特哦"
+                    await send_msg(matcher,event,msg)
+                else:
+                    config_global["reply_at"] = True
+                    with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
+                        json.dump(config_global,file) 
+                    msg = "回复艾特已开启"
+                    await send_msg(matcher,event,msg)
+            elif text == "关闭" or text == "off" or text == "关":
+                config_global = config_in_global()
+                zt_reply = json_get(config_global,"reply_at")
+                if zt_reply == False:
+                    msg = "请勿重复关闭对话回复哦"
+                    await send_msg(matcher,event,msg)
+                else:
+                    config_global["reply_at"] = False
+                    with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
+                        json.dump(config_global,file)
+                    msg = "回复艾特已关闭"
+                    await send_msg(matcher,event,msg)
+        else:
+            msg = "在对话回复开启的状况下（,回复艾特无效"
+            await send_msg(matcher,event,msg)
+    else:
+        msg = f"请注意，正确的格式应该是\n回复艾特{text}"
+        await send_msg(matcher,event,msg)
+
+@set_get_global.handle()
+async def get_config(bot:Bot,events: Event):
+    id = get_id(events)
+    msg_list = await get_config_global()
+    if isinstance(events, GroupMessageEvent):
+        await bot.send_group_forward_msg(group_id=event.group_id, messages=msg_list)  # type: ignore
+    elif json_get(config_in_global(),"private"):
+        await bot.send_private_forward_msg(user_id=id, messages=msg_list)  # type: ignore
+
+@private.handle()
+async def reply(matcher: Matcher, bot: Bot, event: MessageEvent, msg: Message = CommandArg()):
+    text = msg.extract_plain_text()
+    if not text == "" or text == None:
+        if text == "开启" or text == "on" or text == "开":
+            config_global = config_in_global()
+            zt_reply = json_get(config_global,"private")
+            if zt_reply == True:
+                msg = "请勿重复开启私聊回复哦"
+                await send_msg(matcher,event,msg)
+            else:
+                config_global["private"] = True
+                with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
+                    json.dump(config_global,file) 
+                msg = "私聊回复已启用"
+                await send_msg(matcher,event,msg)
+        elif text == "关闭" or text == "off" or text == "关":
+            config_global = config_in_global()
+            zt_reply = json_get(config_global,"private")
+            if zt_reply == False:
+                msg = "请勿重复关闭私聊回复哦"
+                await send_msg(matcher,event,msg)
+            else:
+                config_global["private"] = False
+                with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
+                    json.dump(config_global,file)
+                msg = "私聊回复已停用"
+                await send_msg(matcher,event,msg)
+    else:
+        msg = f"请注意，正确的格式应该是\n私聊回复{text}"
+        await send_msg(matcher,event,msg)

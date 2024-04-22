@@ -215,6 +215,8 @@ def config_in_global() -> str:
                 back = json_data
         else:
             create_dir_usr(f"{log_dir}/config")
+            logger.error(f"加载全局配置时失败！，请不要随意修改bot插件本地文件,现已重置所有群聊配置")
+            logger.warning("你要为你的行为负责，来自不知名开发者")
             with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                 json_data = {}
                 global_cyberfurry = {}
@@ -246,8 +248,8 @@ def config_in_global() -> str:
                 global_easycyberfurry["Hx"] = package_easycyberfurry
                 json_data['global_switch'] = True
                 json_data['limit'] = 12
-                json_data['reply'] = True
-                json_data['reply_at'] = True
+                json_data['reply'] = False
+                json_data['reply_at'] = False
                 json_data['private'] = True
                 json_data['blacklist_user'] = black_user
                 json_data['blacklist_group'] = black_group
@@ -257,48 +259,48 @@ def config_in_global() -> str:
                 json.dump(json_data,file)
                 back = json_data
     except Exception as e:
-                logger.warning("加载全局本地配置时失败！，请不要随意修改bot插件本地文件,现已重置配置")
-                with open(f'{log_dir}/config.config_global.json','w',encoding='utf-8') as file:
-                    json_data = {}
-                    global_cyberfurry = {}
-                    global_easycyberfurry = {}
-                    black_user = []
-                    black_group = []
-                    black_world = []
-                    package_cyberfurry = {}
-                    package_easycyberfurry = {}
-                    Xml = []
-                    package_cyberfurry["systemPrompt"] = "你的名字叫Hx,与幻歆的幻梦破碎之歆中诞生"
-                    package_cyberfurry["xml"] = Xml
-                    package_cyberfurry["create_by"] = 3485462167
-                    package_cyberfurry["create_time"] = 1713710000
-                    package_cyberfurry["last_update"] = 1713710923
-                    package_cyberfurry["public"] = True
-                    package_cyberfurry["id"] = 0
-                    global_cyberfurry["Hx"] = package_cyberfurry
-                    package_easycyberfurry["cfNickname"] = "Hx"
-                    package_easycyberfurry["cfSpecies"] = "龙狼"
-                    package_easycyberfurry["cfConAge"] = "child"
-                    package_easycyberfurry["cfConStyle"] = "sentiment"
-                    package_easycyberfurry["cfNickname"] = "相传Hx诞生于幻歆的幻梦破碎之歆中，是终结和新生的象征。"
-                    package_easycyberfurry["create_by"] = 3485462167
-                    package_easycyberfurry["create_time"] = 1713710000
-                    package_easycyberfurry["last_update"] = 1713710923
-                    package_easycyberfurry["public"] = True
-                    package_easycyberfurry["id"] = 0
-                    global_easycyberfurry["Hx"] = package_easycyberfurry
-                    json_data['global_switch'] = True
-                    json_data['limit'] = 12
-                    json_data['reply_at'] = True
-                    json_data['private'] = True
-                    json_data['private'] = True
-                    json_data['blacklist_user'] = black_user
-                    json_data['blacklist_group'] = black_group
-                    json_data['blacklist_world'] = black_world
-                    json_data['cyberfurry'] = global_cyberfurry
-                    json_data['easycyberfurry'] = global_easycyberfurry
-                    json.dump(json_data,file)
-                    back = json_data
+            create_dir_usr(f"{log_dir}/config")
+            with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
+                json_data = {}
+                global_cyberfurry = {}
+                global_easycyberfurry = {}
+                black_user = []
+                black_group = []
+                black_world = []
+                package_cyberfurry = {}
+                package_easycyberfurry = {}
+                Xml = []
+                package_cyberfurry["systemPrompt"] = "你的名字叫Hx,与幻歆的幻梦破碎之歆中诞生"
+                package_cyberfurry["xml"] = Xml
+                package_cyberfurry["create_by"] = 3485462167
+                package_cyberfurry["create_time"] = 1713710000
+                package_cyberfurry["last_update"] = 1713710923
+                package_cyberfurry["public"] = True
+                package_cyberfurry["id"] = 0
+                global_cyberfurry["Hx"] = package_cyberfurry
+                package_easycyberfurry["cfNickname"] = "Hx"
+                package_easycyberfurry["cfSpecies"] = "龙狼"
+                package_easycyberfurry["cfConAge"] = "child"
+                package_easycyberfurry["cfConStyle"] = "sentiment"
+                package_easycyberfurry["cfNickname"] = "相传Hx诞生于幻歆的幻梦破碎之歆中，是终结和新生的象征。"
+                package_easycyberfurry["create_by"] = 3485462167
+                package_easycyberfurry["create_time"] = 1713710000
+                package_easycyberfurry["last_update"] = 1713710923
+                package_easycyberfurry["public"] = True
+                package_easycyberfurry["id"] = 0
+                global_easycyberfurry["Hx"] = package_easycyberfurry
+                json_data['global_switch'] = True
+                json_data['limit'] = 12
+                json_data['reply'] = False
+                json_data['reply_at'] = False
+                json_data['private'] = True
+                json_data['blacklist_user'] = black_user
+                json_data['blacklist_group'] = black_group
+                json_data['blacklist_world'] = black_world
+                json_data['cyberfurry'] = global_cyberfurry
+                json_data['easycyberfurry'] = global_easycyberfurry
+                json.dump(json_data,file)
+                back = json_data
     return back
 
 #载入群聊本地配置
@@ -336,7 +338,7 @@ def config_in_group(groupid) -> str:
                 json.dump(json_data,file)
                 back = json_data
     except Exception as e:
-            logger.warning(f"加载群聊{groupid}配置时失败！，请不要随意修改bot插件本地文件,现已重置所有群聊配置")
+            logger.error(f"加载群聊{groupid}配置时失败！，请不要随意修改bot插件本地文件,现已重置所有群聊配置")
             logger.warning("你要为你的行为负责，来自不知名开发者")
             with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
                 dt = time.time()
@@ -394,7 +396,7 @@ def config_in_user(id,nick) -> str:
                 json.dump(json_data,file)
                 back = json_data
     except Exception as e:
-            logger.warning(f"加载用户{id}配置时失败！，请不要随意修改bot插件本地文件,现已重置所有用户配置")
+            logger.error(f"加载用户{id}配置时失败！，请不要随意修改bot插件本地文件,现已重置所有用户配置")
             logger.warning("你要为你的行为负责，来自不知名开发者")
             with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                 dt = time.time()
@@ -466,19 +468,80 @@ async def get_history(id,bot,event) -> List[MessageSegment]:
         ]
     return msg_list
 
+async def get_config_global() -> List[MessageSegment]:
+    config = config_in_global()
+    msg_list = []
+    try:
+        reply = config["reply"]
+        reply_at = config["reply_at"]
+        global_switch = config["global_switch"]
+        private = config["private"]
+        limit = config["limit"]
+        msg_list.append(
+                MessageSegment.node_custom(
+                user_id=3202123263,
+                nickname="AAA星佑批发（Hx限定）",
+                content=Message(f"全局开启状态:{global_switch}"),                    
+                ))
+        msg_list.append(
+                MessageSegment.node_custom(
+                user_id=3202123263,
+                nickname="AAA星佑批发（Hx限定）",
+                content=Message(f"对话回复开启状态:{reply}"),                    
+                ))
+        msg_list.append(
+                MessageSegment.node_custom(
+                user_id=3202123263,
+                nickname="AAA星佑批发（Hx限定）",
+                content=Message(f"回复艾特开启状态:{reply_at}\n请注意：该配置项和对话回复冲突，当对话回复开启时，该配置项无效！"),                    
+                ))
+        msg_list.append(
+                MessageSegment.node_custom(
+                user_id=3202123263,
+                nickname="AAA星佑批发（Hx限定）",
+                content=Message(f"是否启用私聊？:{private}"),                    
+                ))
+        msg_list.append(
+                MessageSegment.node_custom(
+                user_id=3202123263,
+                nickname="AAA星佑批发（Hx限定）",
+                content=Message(f"对话次数上限:{limit}"),                    
+                ))
+        msg_list.insert(
+            0,
+                MessageSegment.node_custom(
+                    user_id=3485462167,
+                    nickname="AAA星佑批发（幻歆限定）",
+                    content=Message("一下为bot全局配置"),
+                ),)
+    except Exception as e:
+        msg_list = [
+            MessageSegment.node_custom(
+                user_id=3485462167,
+                nickname="AAA星佑批发（幻歆限定）",
+                content=Message("获取全局配置合并消息时出错！"),
+            )
+        ]
+    return msg_list
+
 #检测对话次数
-def chat_times(id) -> int:
+def chat_times(id,nick) -> int:
     data = log_in()
     history = data[f"{id}"]['log']
-    times = len(history)/2 +0.5
-    if times >= hx_config.yinying_limit:
+    times = len(history)/2
+    limit = json_get(config_in_global(),"limit")
+    config = config_in_user(id,nick)
+    if times >= limit:
         dt = time.time()
         t = int(dt)
         data[f'{id}']['time'] = t
         data[f"{id}"]['log'] = []
+        config[f"{id}"]["time"] = t
         with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
             json.dump(data,file)
-            return 0
+            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as user:
+                json.dump(config,user)
+                return 0
     else:
         return times
 
@@ -517,16 +580,20 @@ def json_get(json,key) -> str:
     return back
 
 #手动刷新对话
-def clear_id(id) -> str:
+def clear_id(id,nick) -> str:
     data = log_in()
     dt = time.time()
     t = int(dt)
     data[f'{id}']['time'] = t
     data[f'{id}']['log'] = []
+    config = config_in_user(id,nick)
+    config[f"{id}"]["time"] = t
     try:
         with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
             json.dump(data,file)
-            zt = True
+            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as user:
+                json.dump(config,user)
+                zt = True
     except Exception as e:
             zt = False
     return zt
@@ -609,6 +676,10 @@ def data_in(groupid,id,text,nick) -> str:
             json_data = False
     return packages_data
 
+def get_chatfubar() -> str:
+    return True
+
+
 #全局发送消息函数，发送消息直接await就行
 async def send_msg(matcher, event, content):
     config_global = config_in_global()
@@ -634,8 +705,9 @@ async def yinying(groupid,id,text,nick):
             back_msg = f"json解析报错！\n返回结果：{e}"
             return back_msg
     try:
-        times = chat_times(id)
-        if times >= hx_config.yinying_limit or times == 0:
+        times = chat_times(id,nick)
+        limit = json_get(config_in_global(),"limit")
+        if times >= limit or times == 0:
             msg = back['choices'][0]['message']['content']
             text0 = msg.replace("\n","\\n")
             text1 = text0.replace("'","\\'")
@@ -648,9 +720,9 @@ async def yinying(groupid,id,text,nick):
             text1 = text0.replace("'","\\'")
             text = text1.replace('"','')
             ai_out(id,text)
-            back_msg = f"{msg}\n[{times}|{hx_config.yinying_limit}]"
+            back_msg = f"{msg}\n[{times}|{limit}]"
     except Exception as e:
-            back_msg = f"{back}\n\n{osu}\n\n未知错误，错误定位于#主要构建函数。"
+        back_msg = f"{back}\n\n{osu}\n\n未知错误，错误定位于#主要构建函数。"
     return back_msg
 
 #获取回复（被艾特）
