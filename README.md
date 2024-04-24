@@ -57,6 +57,74 @@ OneBot:
 - @Bot
 - 回复Bot
 
+
+<details>
+  <summary><b style="font-size: 1.5rem">指令集</b></summary>
+
+/hx
+- 别名：chat
+- 主要对话命令
+
+/刷新对话
+-别名：clear
+-主动刷新对话
+
+/导出对话
+-别名：getchat
+-导出对话记录，没有对话记录会出错。
+
+/设置全局配置
+-别名：设置配置全局，globalset
+-设置bot的全局配置
+
+/导出全局配置
+-别名：getset_global
+-导出bot的全局配置
+-该命令包含在"设置全局配置"里
+
+/模型列表
+-别名：modellist，chat模型列表
+-发送bot可用模型
+
+/切换模型 [模型id]
+-别名：qhmodel，切换chat模型，模型切换
+-切换bot当前使用的模型
+-私聊群聊动态响应，如果在群内输入则切换群内加载的模型，私聊输入则切换私聊的。
+
+/easycyber
+-别名：easycyber设置，hxworld
+-模型easycyberfurry主要配置
+-内有多个指令
+
+/控制台操作
+-别名：管理控制台，setstart
+-模型easycyberfurry的角色投稿管理，即将更新cyber的角色投稿管理
+-内有多个指令
+
+/确认版本
+-别名：旅行伙伴确认，版本确认
+-确认bot当前使用的版本和当前加载的模型。区分群聊和私聊动态响应
+
+/sd [名称] [设定]
+-别名：旅行伙伴加入，设定加入
+-[名称]可为空，即发送 旅行伙伴加入 [设定]
+-[设定]不可为空，必填
+-载入用户的设定信息和自定义昵称
+
+
+
+
+
+
+
+
+
+
+
+
+</details>
+<br>
+
 ## 配置项
 
 > [!WARNING]
@@ -69,6 +137,8 @@ OneBot:
 > 请注意，该项目是接入了乱乱的项目，你需要遵守api使用的 [规范](https://wingmark.feishu.cn/docx/NFgJddgQAotygKxXiu6cpyg5nqr)。
 
 配置方式：直接在 NoneBot 全局配置文件中添加以下配置项即可。
+<details>
+  <summary><b style="font-size: 1.5rem">配置项列表</b></summary>
 
 ### yinying_appid
 
@@ -95,6 +165,9 @@ OneBot:
 - 默认值：`None`
 - 说明：这里是超级管理员（插件）
 - 重要：必填（你需要这个来管理该插件）
+
+</details>
+<br>
 
 配置文件示例（默认模板）
 
