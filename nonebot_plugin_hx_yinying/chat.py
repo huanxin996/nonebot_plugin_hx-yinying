@@ -24,6 +24,7 @@ else:
 
 #判断模型
 def model_got(msg) -> str:
+    back = "yinyingllm-v2"
     try:
         if msg == "1" or msg == "yinyingllm-v1" or msg == "yinyingllmv1":
             back = "yinyingllm-v1"
