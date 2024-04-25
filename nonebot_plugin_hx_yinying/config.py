@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class Config(BaseModel):
     # 插件版本号勿动！！！！
-    hx_version: Optional[str] = "1.0.6"
+    hx_version: Optional[str] = "1.0.8"
     # 你的appid
     yinying_appid: Optional[str] = None
     yinying_token: Optional[str] = None

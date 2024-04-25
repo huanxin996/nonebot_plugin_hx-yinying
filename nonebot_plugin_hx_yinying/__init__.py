@@ -62,6 +62,7 @@ if hx_config.yinying_appid == None or hx_config.yinying_token == None:
 else:
     logger.opt(colors=True).success("【Hx】加载核心配置成功")
 
+
 #根据订阅信息注册定身任务
 try:
     extent = int(len(dy_list))
@@ -72,6 +73,24 @@ try:
         config_minute = json_get_time(user_config,"dy_minute")
         scheduler.add_job(func=get_chat,trigger='interval',args=[key] ,hours=config_time, minutes=config_minute, id=key)
     logger.opt(colors=True).success(f"【Hx】定时任务加载成功,当前共加载{extent}个订阅用户")
+    logger.opt(colors=True).success( f"""
+    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+<fg #60F5F5>,--,                                                                                                 </fg #60F5F5>                 
+<r>      ,--.'|                                       ,--,     ,--,                                 ,---,.               ___   </r> 
+<y>   ,--,  | :                                       |'. \   / .`|  ,--,                         ,'  .'  \            ,--.'|_   </y>
+<g>,---.'|  : '         ,--,                    ,---, ; \ `\ /' / ;,--.'|         ,---,         ,---.' .' |   ,---.    |  | :,' </g> 
+<c>|   | : _' |       ,'_ /|                ,-+-. /  |`. \  /  / .'|  |,      ,-+-. /  |        |   |  |: |  '   ,'\   :  : ' :  </c>
+<e>:   : |.'  |  .--. |  | :    ,--.--.    ,--.'|'   | \  \/  / ./ `--'_     ,--.'|'   |        :   :  :  / /   /   |.;__,'  /   </e>
+<m>|   ' '  ; :,'_ /| :  . |   /       \  |   |  ,"' |  \  \.'  /  ,' ,'|   |   |  ,"' |        :   |    ; .   ; ,. :|  |   |    </m>
+<e>'   |  .'. ||  ' | |  . .  .--.  .-. | |   | /  | |   \  ;  ;   '  | |   |   | /  | |        |   :     \'   | |: ::__,'| :    </e>
+<c>|   | :  | '|  | ' |  | |   \__\/: . . |   | |  | |  / \  \  \  |  | :   |   | |  | |        |   |   . |'   | .; :  '  : |__  </c>
+<g>'   : |  : ;:  | : ;  ; |   ," .--.; | |   | |  |/  ;  /\  \  \ '  : |__ |   | |  |/         '   :  '; ||   :    |  |  | '.'| </g>
+<y>|   | '  ,/ '  :  `--'   \ /  /  ,.  | |   | |--' ./__;  \  ;  \|  | '.'||   | |--'          |   |  | ;  \   \  /   ;  :    ; </y>
+<r>;   : ;--'  :  ,      .-./;  :   .'   \|   |/     |   : / \  \  ;  :    ;|   |/              |   :   /    `----'    |  ,   /  </r>
+<m>|   ,/       `--`----'    |  ,     .-./'---'      ;   |/   \  ' |  ,   / '---'               |   | ,'                ---`-'   </m>
+<r>'---'                      `--`---'               `---'     `--` ---`-'                      `----'</r>
+    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+""")
 except Exception as e:
     logger.opt(colors=True).error(f"【Hx】:错误捕获{e}，联系开发者！")
     logger.opt(colors=True).error("【Hx】定时任务加载失败！！，联系开发者！")
@@ -1090,10 +1109,32 @@ async def _(matcher: Matcher,event: MessageEvent, s: T_State):
                 with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
                     json.dump(config_1,file)
                 await send_msg(matcher,event,msg)
-            elif text == "意外":
-                s["last"] = True
-                msg = "在写了在写了"
+            elif text == "稳定":
+                s["last"] = "hour"
+                msg = "接下来你发送的数字将决定chat角色每过去几小时*分钟来找你一次"
                 await send_msg_reject(matcher,event,msg)
+
+        if s["last"] == "hour":
+            s["last"] = "minutes"
+            s["hour"] = text
+            msg = f"接下来你发送的数字将决定chat角色每过去{text}小时;几分钟来找你一次"
+            await send_msg_reject(matcher,event,msg)
+        
+        if s["last"] == "minutes":
+            s["last"] = True
+            hour = s["hour"]
+            minute = text
+            user_config["dy_time"] = hour
+            user_config["dy_minute"] = minute
+            dy_list.append(id)
+            config_1[f"{id}"] = user_config
+            global_config["dy_list"] = dy_list
+            msg = "好哦，银影会不定时来找你聊天的！"
+            with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
+                json.dump(global_config,file)
+            with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+                json.dump(config_1,file)
+            await send_msg(matcher,event,msg)
 
 
     if text == "加入":
