@@ -1,0 +1,110 @@
+body{
+  background-image: linear-gradient(to bottom, #262626, #262626);
+    color: white;
+}
+html {
+  display: flex;
+  padding: 1px 
+  4px;
+}
+.bt{
+  font-size: 26px;
+  text-align-last: center;
+  height: 30px;
+  font-family: "HGGTZ";
+}
+.bt_hx-sy{
+  font-size: 10px;
+  text-align-last: center;
+  height: 1px;
+  font-family: "HGGTZ";
+}
+.bt_oops{
+padding: 2px 0px;
+  background: #ff000063;
+  font-size: 40px;
+  text-align-last: center;
+  width: 100%;
+  font-family: "HGGTZ";
+}
+.horizontal-line {
+    border-bottom: 3px solid yellow;
+    width: 100%
+ }
+
+ .horizontal-KK{
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  padding: 1px 5px;
+ }
+
+.horizontal-values {
+  text-align-last: center;
+  padding: 1px 8px;
+  border: 5px;
+  border-style: solid;
+  border-color:#229ad2;
+    border-top: 0px;
+    border-bottom: 0px;
+    background:  #ffffff3f;
+  font-size: 22px;
+  font-family: "MKSJ";
+}
+.KK{
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-between;
+  padding: 0px 0px;
+}
+.box {
+  padding-top: 12%;
+  background: linear-gradient(to left, #2CD5FF, #2CD5FF) left top no-repeat,
+  linear-gradient(to bottom, #2CD5FF, #2CD5FF) left top no-repeat,
+  linear-gradient(to left, #2CD5FF, #2CD5FF) right top no-repeat,
+  linear-gradient(to bottom, #2CD5FF, #2CD5FF) right top no-repeat,
+  linear-gradient(to left, #2CD5FF, #2CD5FF) left bottom no-repeat,
+  linear-gradient(to bottom, #2CD5FF, #2CD5FF) left bottom no-repeat,
+  linear-gradient(to left, #2CD5FF, #2CD5FF) right bottom no-repeat,
+  linear-gradient(to left, #2CD5FF, #2CD5FF) right bottom no-repeat;
+  background-size: 4px 20px, 20px 4px, 4px 20px, 20px 4px;
+  border: 1px solid #005bee;
+  display: block;
+  padding: 15px;
+  position: relative;
+}
+.bot_init {
+  background-color: var(--background);
+  display: block;
+  cursor: pointer;
+  padding: 15px;
+  border: 3px solid var(--primary);
+}
+.box span {
+  display: inline-block;
+  width: 35%;
+  background:#05286C;
+  font-size: 14px;
+  position: absolute;
+  top: 0;
+  left: 32%;
+  padding: 4px 0px;
+  color: #19E8FE;
+  border-radius: 0 0 10px 10px;
+
+  }
+.tag {
+    font-family: "MKSJ";
+    width: 240px;
+      height: 25px;
+      top: 10px;
+      right: -70px;
+      text-align: center;
+      line-height: 25px;
+      transform: rotate(20deg);
+    position: absolute;
+    color: rgb(255, 255, 255);
+    background: #00aaff;
+  }

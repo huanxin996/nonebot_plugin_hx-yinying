@@ -1,5 +1,4 @@
 from nonebot.plugin import PluginMetadata
-from .config import Config
 from nonebot import on_command, on_message ,get_plugin_config,require
 require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
@@ -15,9 +14,11 @@ from html import unescape
 from nonebot.typing import T_State
 from nonebot.log import logger
 from nonebot.matcher import Matcher
-from nonebot.rule import to_me
+from nonebot.rule import to_me,Rule
 import json,os,random
+from .config import Config
 from .chat import *
+from .report import post_run
 
 __plugin_meta__ = PluginMetadata(
     name="Hx_YinYing",
@@ -45,9 +46,9 @@ if not new_verision and not time:
     logger.error(f"[Hx_YinYing]:无法获取最新的版本，当前版本为{hx_config.hx_version}，可能已经过时！")
 else:
     if new_verision <= hx_config.hx_version:
-        logger.success(f"[Hx_YinYing]:你的Hx_YinYing已经是最新版本了！当前版本为{hx_config.hx_version}")
+        logger.success(f"[Hx_YinYing]:你的Hx_YinYing已经是最新版本了！当前版本为{hx_config.hx_version},仓库版本为{new_verision}")
     else:
-        if os.path.exists(f"{log_dir}\config\config_glob21.json"):
+        if os.path.exists(f"{log_dir}/config/config_glob21.json"):
             logger.success("121")
         else:
             logger.success("[Hx_YinYing]:检查到Hx_YinYing有新版本！")
@@ -62,8 +63,7 @@ if hx_config.yinying_appid == None or hx_config.yinying_token == None:
 else:
     logger.opt(colors=True).success("【Hx】加载核心配置成功")
 
-
-#根据订阅信息注册定身任务
+#根据订阅信息注册定时任务
 try:
     extent = int(len(dy_list))
     for key in dy_list:
@@ -95,28 +95,24 @@ except Exception as e:
     logger.opt(colors=True).error(f"【Hx】:错误捕获{e}，联系开发者！")
     logger.opt(colors=True).error("【Hx】定时任务加载失败！！，联系开发者！")
 
-msg_at = on_message(rule=to_me(), priority=10, block=True)
-msg_ml = on_command("hx", aliases={"chat"}, priority=10, block=True)
-clear =  on_command("刷新对话", aliases={"clear"}, priority=0, block=True)
-history_get = on_command("导出对话", aliases={"getchat"}, priority=0, block=True)
-set_global_config = on_command("设置全局配置", aliases={"设置配置全局","globalset"}, priority=0, block=True)
-set_get_global = on_command("导出全局设置", aliases={"getset_global"}, priority=0, block=True)
-model_list = on_command("模型列表", aliases={"modellist","chat模型列表"}, priority=0, block=True)
-model_handoff = on_command("切换模型", aliases={"qhmodel","切换chat模型","模型切换"}, priority=0, block=True)
-rule_reply = on_command("对话回复", aliases={"chat回复"}, priority=0, block=True)
-rule_reply_at = on_command("回复艾特", aliases={"chat回复艾特"}, priority=0, block=True)
-private = on_command("私聊回复", aliases={"私聊chat"}, priority=0, block=True)
-at_reply = on_command("艾特回复", aliases={"bot艾特回复"}, priority=0, block=True)
-easycyber_set = on_command("easycyber", aliases={"easycyber设置","hxworld"}, priority=0, block=True)
-cyber_set = on_command("cyber", aliases={"cyber设置","Hxworld"}, priority=0, block=True)
-admin_set = on_command("控制台操作", aliases={"管理控制台","setstart"}, priority=0, block=True)
-verision = on_command("确认版本", aliases={"旅行伙伴确认","版本确认"}, priority=0, block=True)
-character = on_command("sd", aliases={"旅行伙伴加入","设定加入"}, priority=0, block=True)
-chat_ne = on_command("加入订阅", aliases={"旅行伙伴觉醒","订阅加入"}, priority=0, block=True)
-ces = on_command("ces", aliases={"测试"}, priority=0, block=True)
+#主要命令列表
+msg_at = on_message(rule=Rule(chek_rule_base)&to_me(), priority=10,  block=True)
+msg_ml = on_command("hx", aliases={"chat"},rule=Rule(chek_rule_base),  priority=10, block=True)
+clear =  on_command("刷新对话", aliases={"clear"},rule=Rule(chek_rule_base),  priority=0, block=True)
+history_get = on_command("导出对话", aliases={"getchat"},rule=Rule(chek_rule_base),  priority=0, block=True)
+set_global_config = on_command("设置全局配置", aliases={"设置配置全局","globalset"},rule=Rule(chek_rule_admin),  priority=0, block=True)
+model_list = on_command("模型列表", aliases={"modellist","chat模型列表"},rule=Rule(chek_rule_base),  priority=0, block=True)
+model_handoff = on_command("切换模型", aliases={"qhmodel","切换chat模型","模型切换"},rule=Rule(chek_rule_base),  priority=0, block=True)
+easycyber_set = on_command("easycyber", aliases={"easycyber设置","hxworld"},rule=Rule(chek_rule_base),  priority=0, block=True)
+cyber_set = on_command("cyber", aliases={"cyber设置","Hxworld"},rule=Rule(chek_rule_base),  priority=0, block=True)
+admin_set = on_command("控制台操作", aliases={"管理控制台","setstart"},rule=Rule(chek_rule_admin),  priority=0, block=True)
+verision = on_command("确认版本", aliases={"旅行伙伴确认","版本确认"},rule=Rule(chek_rule_base),  priority=0, block=True)
+character = on_command("sd", aliases={"旅行伙伴加入","设定加入"},rule=Rule(chek_rule_base),  priority=0, block=True)
+chat_ne = on_command("加入订阅", aliases={"旅行伙伴觉醒","订阅加入"},rule=Rule(chek_rule_base),  priority=0, block=True)
+ces = on_command("ces", aliases={"测试"},rule=Rule(chek_rule_base), priority=0, block=True)
 
 @character.handle()
-async def character(matcher: Matcher,bot:Bot, event: MessageEvent, events:Event, msg: Message = CommandArg()):
+async def character(matcher: Matcher,bot:Bot, event: MessageEvent, msg: Message = CommandArg()):
     user = get_id(event)
     nick = await get_nick(bot,event)
     config = config_in_user(user,nick)
@@ -132,14 +128,14 @@ async def character(matcher: Matcher,bot:Bot, event: MessageEvent, events:Event,
                 config_get["nick"] = nick
                 config_get["character"] = text
                 config[f"{user}"] = config_get
-                with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                     json.dump(config,file)
                     msg = f"{nick}加入成功"
             elif int(len(msg)) == 2:
                 config_get["nick"] = msg[1]
                 config_get["character"] = msg[0]
                 config[f"{user}"] = config_get
-                with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                     json.dump(config,file)
                     msg = f"{msg[0]}加入成功！"
             else:
@@ -150,9 +146,9 @@ async def character(matcher: Matcher,bot:Bot, event: MessageEvent, events:Event,
             logger.opt(colors=True).error(f"{e}")
         
 @verision.handle()
-async def verision_get(matcher: Matcher, event: MessageEvent, events:Event):
+async def verision_get(matcher: Matcher, event: MessageEvent):
     new_verision, time = update_hx()
-    if isinstance(events, GroupMessageEvent):
+    if get_groupid(event):
         id = get_groupid(event)
         e_config = config_in_group(id)
         config = json_get(e_config,id)
@@ -214,22 +210,12 @@ async def verision_get(matcher: Matcher, event: MessageEvent, events:Event):
         await send_msg(matcher, event, msg)
 
 @msg_at.handle()
-async def at(matcher: Matcher, event: MessageEvent, bot: Bot, events:Event):
-    config_global = config_in_global()
-    at_reply = json_get(config_global,"at_reply")
-    if not at_reply:
-        logger.opt(colors=True).warning("由于艾特回复被设置为false，此条消息忽略")
-    elif isinstance(events, GroupMessageEvent):
-        await get_answer_at(matcher, event, bot)
-    elif json_get(config_in_global(),"private"):
-        await get_answer_at(matcher, event, bot)
+async def at(matcher: Matcher, event: MessageEvent, bot: Bot):
+    await get_answer_at(matcher, event, bot)
 
 @msg_ml.handle()
-async def ml(matcher: Matcher, event: MessageEvent, bot: Bot, events:Event, msg: Message = CommandArg()):
-    if isinstance(events, GroupMessageEvent):
-        await get_answer_ml(matcher, event, bot ,msg)
-    elif json_get(config_in_global(),"private"):
-        await get_answer_ml(matcher, event, bot ,msg)
+async def ml(matcher: Matcher, event: MessageEvent, bot: Bot, msg: Message = CommandArg()):
+    await get_answer_ml(matcher, event, bot ,msg)
 
 @clear.handle()
 async def clear(matcher: Matcher,bot:Bot, event: MessageEvent):
@@ -295,35 +281,39 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
             config = config_in_global()
             config_name = s["set"]
             get_config = json_get_text(config,config_name)
-            if text == "on" or text == "开" or text == True:
-                text = True
-            elif text == "off" or text == "关" or text == False:
-                text = False
+            key = {"on":False,"off":False,"开":True,"关":False,"开启":True,"关闭":False}
+            if text in key:
+                s["last"] = True
+                text = key[f"{text}"]
                 if get_config and text:
                     msg = f"该配置项[{config_name}]已经开启了，不需要重复开启噢"
+                    await send_msg(matcher,event,msg)
                 elif not get_config and not text:
                     msg = f"该配置项[{config_name}]已经关闭了，不需要重复关闭噢"
+                    await send_msg(matcher,event,msg)
                 elif text:
                     config[f"{config_name}"] = True
-                    with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
+                    with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                         json.dump(config,file)
                     msg = f"{config_name}的状态已更改为{text}"
+                    await send_msg(matcher,event,msg)
                 elif not text:
                     config[f"{config_name}"] = False
-                    with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
+                    with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                         json.dump(config,file)
                     msg = f"{config_name}的状态已更改为{text}"
-            s["last"] = True
-            if text == "退出":
-                msg = "已退出"
-            await send_msg(matcher,event,msg)        
+            else:
+                msg = "未知"
+            await send_msg(matcher,event,msg) 
+                
+     
         
         if s["last"] == "修改w":
             config = config_in_global()
             config_name = s["set"]
             get_config = json_get_text(config,config_name)
-            config[f"{config_name}"] = text
-            with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
+            config[f"{config_name}"] = int(text)
+            with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                 json.dump(config,file)
             msg = f"{config_name}的id已更改为{text}"
             s["last"] = True
@@ -354,7 +344,7 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
                 else:
                     config_get.append(text)
                     config["config_name"] = config_get
-                    with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
+                    with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                         json.dump(config,file)
                         msg = "该id已添加在这个配置项里"
             elif config_set_type == "移除" or config_set_type == "删除":
@@ -363,7 +353,7 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
                 else:
                     config_get.remove(text)
                     config["config_name"] = config_get
-                    with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
+                    with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                         json.dump(config,file)
                         msg = "该id已在这个配置项里被移除"
             await send_msg(matcher,event,msg) 
@@ -402,11 +392,11 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
 
 @history_get.handle()
 async def history(bot: Bot, event: MessageEvent,events: Event):
-    id = get_id(events)
+    id = get_id(event)
     msg_list = await get_history(id,bot,event)
     if isinstance(events, GroupMessageEvent):
         await bot.send_group_forward_msg(group_id=event.group_id, messages=msg_list)  # type: ignore
-    elif json_get(config_in_global(),"private"):
+    else:
         await bot.send_private_forward_msg(user_id=id, messages=msg_list)  # type: ignore
 
 @model_list.handle()
@@ -431,7 +421,7 @@ async def handoff(matcher: Matcher, bot: Bot, event: MessageEvent,events: Event,
             else:
                 group_config["use_model"] = model
                 config_group[f"{groupid}"] = group_config
-                with open(f'{log_dir}\config\config_group.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
                     json.dump(config_group,file)
                     clear_id(id,nick)
                     msg =f"切换成功（当前模型已切换为{model})"
@@ -447,166 +437,13 @@ async def handoff(matcher: Matcher, bot: Bot, event: MessageEvent,events: Event,
             else:
                 user_config['private_model'] = f"{model}"
                 config_user[f"{id}"] = user_config
-                with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                     json.dump(config_user,file)
                     clear_id(id,nick)
                     msg =f"切换成功（当前模型已切换为{model})"
                     await send_msg(matcher,event,msg)
     else:
         msg = "请注意，切换模型后不能为空哦"
-        await send_msg(matcher,event,msg)
-
-@rule_reply.handle()
-async def reply(matcher: Matcher, event: MessageEvent, msg: Message = CommandArg()):
-    text = msg.extract_plain_text()
-    if not text == "" or text == None:
-        if text == "开启" or text == "on" or text == "开":
-            config_global = config_in_global()
-            zt_reply = json_get(config_global,"reply")
-            if zt_reply == True:
-                msg = "请勿重复开启对话回复哦"
-                await send_msg(matcher,event,msg)
-            else:
-                config_global["reply"] = True
-                with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
-                    json.dump(config_global,file) 
-                msg = "对话回复已开启"
-                await send_msg(matcher,event,msg)
-        elif text == "关闭" or text == "off" or text == "关":
-            config_global = config_in_global()
-            zt_reply = json_get(config_global,"reply")
-            if zt_reply == False:
-                msg = "请勿重复关闭对话回复哦"
-                await send_msg(matcher,event,msg)
-            else:
-                config_global["reply"] = False
-                with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
-                    json.dump(config_global,file)
-                msg = "对话回复已关闭"
-                await send_msg(matcher,event,msg)
-    else:
-        msg = f"请注意，正确的格式应该是\n对话回复{text}"
-        await send_msg(matcher,event,msg)
-
-@rule_reply_at.handle()
-async def reply_at(matcher: Matcher, event: MessageEvent, msg: Message = CommandArg()):
-    text = msg.extract_plain_text()
-    if not text == "" or text == None:
-        if json_get(config_in_global(),"reply") == False:
-            if text == "开启" or text == "on" or text == "开":
-                config_global = config_in_global()
-                zt_reply = json_get(config_global,"reply_at")
-                if zt_reply == True:
-                    msg = "请勿重复开启回复艾特哦"
-                    await send_msg(matcher,event,msg)
-                else:
-                    config_global["reply_at"] = True
-                    with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
-                        json.dump(config_global,file) 
-                    msg = "回复艾特已开启"
-                    await send_msg(matcher,event,msg)
-            elif text == "关闭" or text == "off" or text == "关":
-                config_global = config_in_global()
-                zt_reply = json_get(config_global,"reply_at")
-                if zt_reply == False:
-                    msg = "请勿重复关闭对话回复哦"
-                    await send_msg(matcher,event,msg)
-                else:
-                    config_global["reply_at"] = False
-                    with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
-                        json.dump(config_global,file)
-                    msg = "回复艾特已关闭"
-                    await send_msg(matcher,event,msg)
-        else:
-            msg = "在对话回复开启的状况下（,回复艾特无效"
-            await send_msg(matcher,event,msg)
-    else:
-        msg = f"请注意，正确的格式应该是\n回复艾特{text}"
-        await send_msg(matcher,event,msg)
-
-@set_get_global.handle()
-async def get_config(bot:Bot, event: MessageEvent,events: Event):
-    id = get_id(events)
-    msg_list = await get_config_global()
-    if isinstance(events, GroupMessageEvent):
-        await bot.send_group_forward_msg(group_id=event.group_id, messages=msg_list)  # type: ignore
-    elif json_get(config_in_global(),"private"):
-        await bot.send_private_forward_msg(user_id=id, messages=msg_list)  # type: ignore
-
-@private.handle()
-async def reply(matcher: Matcher, bot: Bot, event: MessageEvent, msg: Message = CommandArg()):
-    text = msg.extract_plain_text()
-    if not text == "" or text == None:
-        if text == "开启" or text == "on" or text == "开":
-            config_global = config_in_global()
-            zt_reply = json_get(config_global,"private")
-            if zt_reply == True:
-                msg = "请勿重复开启私聊回复哦"
-                await send_msg(matcher,event,msg)
-            else:
-                config_global["private"] = True
-                with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
-                    json.dump(config_global,file) 
-                msg = "私聊回复已启用"
-                await send_msg(matcher,event,msg)
-        elif text == "关闭" or text == "off" or text == "关":
-            config_global = config_in_global()
-            zt_reply = json_get(config_global,"private")
-            if zt_reply == False:
-                msg = "请勿重复关闭私聊回复哦"
-                await send_msg(matcher,event,msg)
-            else:
-                config_global["private"] = False
-                with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
-                    json.dump(config_global,file)
-                msg = "私聊回复已停用"
-                await send_msg(matcher,event,msg)
-    else:
-        msg = f"请注意，正确的格式应该是\n私聊回复{text}"
-        await send_msg(matcher,event,msg)
-
-@at_reply.handle()
-async def reply(matcher: Matcher, bot: Bot, event: MessageEvent, msg: Message = CommandArg()):
-    text = msg.extract_plain_text()
-    if not text == "" or text == None:
-        if text == "开启" or text == "on" or text == "开":
-            config_global = config_in_global()
-            at_reply = json_get(config_global,"at_reply")
-            if not at_reply:
-                config_global["at_reply"] = True
-                with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
-                    json.dump(config_global,file) 
-                msg = "艾特回复已启用【bot被@将会回复】"
-                await send_msg(matcher,event,msg)
-            elif at_reply == True:
-                msg = "请勿重复开启艾特回复哦【bot被@已经会回复了】"
-                await send_msg(matcher,event,msg)
-            else:
-                config_global["at_reply"] = True
-                with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
-                    json.dump(config_global,file) 
-                msg = "艾特回复已启用【bot被@将会回复】"
-                await send_msg(matcher,event,msg)
-        elif text == "关闭" or text == "off" or text == "关":
-            config_global = config_in_global()
-            at_reply = json_get(config_global,"at_reply")
-            if not at_reply:
-                config_global["at_reply"] = False
-                with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
-                    json.dump(config_global,file)
-                msg = "艾特回复已停用【bot被@回复已停用】"
-                await send_msg(matcher,event,msg)
-            elif at_reply == False:
-                msg = "请勿重复关闭艾特回复哦【bot被@已经不会回复了】"
-                await send_msg(matcher,event,msg)
-            else:
-                config_global["at_reply"] = False
-                with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
-                    json.dump(config_global,file) 
-                msg = "艾特回复已停用【bot被@回复已停用】"
-                await send_msg(matcher,event,msg)
-    else:
-        msg = f"请注意，正确的格式应该是\n私聊回复{text}"
         await send_msg(matcher,event,msg)
 
 @easycyber_set.got(
@@ -709,7 +546,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                     easycyber_package["cfConStyle"] = s["cfconstyle"]
                     easycyber_package["cfStory"] = s["cfstory"]
                     easycyber_package["public"] = key[f"{text}"]
-                    easycyber_package["creator"] = id
+                    easycyber_package["creator"] = int(id)
                     s["last"] = True
                     cybernick = s["cfnickname"]
                     g = json_get(config_in_global(),"admin_group")
@@ -777,7 +614,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                         else:
                             config_group["easycharacter_in"] = f"{text}"
                             config[f"{groupid}"] = config_group
-                            with open(f'{log_dir}\config\config_group.json','w',encoding='utf-8') as file:
+                            with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
                                 json.dump(config,file)
                                 msg = f"{text}加载成功！" 
                 else:
@@ -792,7 +629,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                         else:
                             user["easycharacter_in"] = f"{text}"
                             config_user[f"{id}"] = user
-                            with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+                            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                                 json.dump(config_user,file)
                                 msg = f"{text}加载成功！"
                     elif not public:
@@ -803,7 +640,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                         else:
                             user["easycharacter_in"] = f"{text}"
                             config_user[f"{id}"] = user
-                            with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+                            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                                 json.dump(config_user,file)
                                 msg = f"{text}加载成功！" 
                 await send_msg(matcher,event,msg)
@@ -888,7 +725,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                     systempromote = s["systempromote"]
                     easycyber_package["system"] = s["systempromote"]
                     easycyber_package["public"] = key[f"{text}"]
-                    easycyber_package["creator"] = id
+                    easycyber_package["creator"] = int(id)
                     s["last"] = True
                     g = json_get(config_in_global(),"admin_group")
                     u = json_get(config_in_global(),"admin_pro")
@@ -953,7 +790,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                         else:
                             config_group["character_in"] = f"{text}"
                             config[f"{groupid}"] = config_group
-                            with open(f'{log_dir}\config\config_group.json','w',encoding='utf-8') as file:
+                            with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
                                 json.dump(config,file)
                                 msg = f"{text}加载成功！" 
                 else:
@@ -968,7 +805,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                         else:
                             user["character_in"] = f"{text}"
                             config_user[f"{id}"] = user
-                            with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+                            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                                 json.dump(config_user,file)
                                 msg = f"{text}加载成功！"
                     elif not public:
@@ -1033,7 +870,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State):
                 user = json_data["creator"]
                 in_ok = easycyber_in(text,json_data)
                 end_json = json_1.pop(f"{text}")
-                with open(f'{log_dir}\file\easycyber_tg.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/file/easycyber_tg.json','w',encoding='utf-8') as file:
                     json.dump(json_1,file)
                     s["last"] = True
                     msg = f"已通过投稿用户为{user}关于角色{text}的投稿"
@@ -1045,7 +882,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State):
                 json_data = json_get(json_1,text)
                 user = json_data["creator"]
                 end_json = json_1.pop(f"{text}")
-                with open(f'{log_dir}\file\easycyber_tg.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/file/easycyber_tg.json','w',encoding='utf-8') as file:
                     json.dump(json_1,file)
                     msg = f"已拒绝投稿用户为{user}关于角色{text}的投稿"
                 await send_msg(matcher,event,msg)
@@ -1104,9 +941,9 @@ async def _(matcher: Matcher,event: MessageEvent, s: T_State):
                 global_config["dy_list"] = dy_list
                 msg = "好哦，银影会不定时来找你聊天的！"
                 scheduler.add_job(func=get_chat,trigger='interval',args=[id] ,hours=hour, minutes=minute, id=id)
-                with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                     json.dump(global_config,file)
-                with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                     json.dump(config_1,file)
                 await send_msg(matcher,event,msg)
             elif text == "稳定":
@@ -1124,15 +961,15 @@ async def _(matcher: Matcher,event: MessageEvent, s: T_State):
             s["last"] = True
             hour = s["hour"]
             minute = text
-            user_config["dy_time"] = hour
-            user_config["dy_minute"] = minute
+            user_config["dy_time"] = int(hour)
+            user_config["dy_minute"] = int(minute)
             dy_list.append(id)
             config_1[f"{id}"] = user_config
             global_config["dy_list"] = dy_list
             msg = "好哦，银影会不定时来找你聊天的！"
-            with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
+            with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                 json.dump(global_config,file)
-            with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                 json.dump(config_1,file)
             await send_msg(matcher,event,msg)
 
@@ -1156,15 +993,15 @@ async def _(matcher: Matcher,event: MessageEvent, s: T_State):
         else:
             msg = "那再见咯，银影会想你的"
             end_json = dy_list.remove(id)
-            global_config["dy_list"] = f"{dy_list}"
+            global_config["dy_list"] = dy_list
             scheduler.remove_job(id)
-            with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
+            with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                 json.dump(global_config,file)
         await send_msg_reject(matcher,event,msg)
 
     if text == "查看加入列表":
         s["last"] = True
-        msg = "在写了在写了，呜呜呜呜呜呜呜"
+        msg = "在写了在写了，呜呜呜呜呜呜呜😭"
         await send_msg(matcher,event,msg)
 
     # 退出
@@ -1175,6 +1012,6 @@ async def _(matcher: Matcher,event: MessageEvent, s: T_State):
         await send_msg(matcher,event,msg)
 
 @ces.handle()
-async def _(event: MessageEvent):
+async def _(event: MessageEvent,msg: Message = CommandArg()):
     id = get_id(event)
-    await get_chat(id)
+    await get_id()

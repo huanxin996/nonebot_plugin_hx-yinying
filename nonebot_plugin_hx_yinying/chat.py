@@ -1,67 +1,119 @@
 # -- coding: utf-8 --**
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent ,MessageSegment ,Message
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent ,MessageSegment ,Message,MessageEvent,Event
 from html import unescape
 from typing import List
-import os,httpx, json, time, requests,loguru
+import os,httpx, json, time, requests,loguru,platform
 from loguru import logger as lg
 from .config import Config
 import operator,nonebot
+from nonebot.params import EventToMe,EventParam
 from nonebot import get_plugin_config, logger, require,get_driver
 from pathlib import Path
 require("nonebot_plugin_localstore")
+from nonebot.rule import to_me
 import nonebot_plugin_localstore as store
 
 
 hx_config = get_plugin_config(Config)
 
-
 #判断主要配置文件夹是否存在！
-if hx_config.hx_path == None:
-    logger.warning("找不到配置里的路径，将使用默认配置")
-    lg.opt(colors=True).success( f"""
-    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
-<fg #60F5F5>,--,                                                                                                 </fg #60F5F5>                 
-<r>      ,--.'|                                       ,--,     ,--,                                 ,---,.               ___   </r> 
-<y>   ,--,  | :                                       |'. \   / .`|  ,--,                         ,'  .'  \            ,--.'|_   </y>
-<g>,---.'|  : '         ,--,                    ,---, ; \ `\ /' / ;,--.'|         ,---,         ,---.' .' |   ,---.    |  | :,' </g> 
-<c>|   | : _' |       ,'_ /|                ,-+-. /  |`. \  /  / .'|  |,      ,-+-. /  |        |   |  |: |  '   ,'\   :  : ' :  </c>
-<e>:   : |.'  |  .--. |  | :    ,--.--.    ,--.'|'   | \  \/  / ./ `--'_     ,--.'|'   |        :   :  :  / /   /   |.;__,'  /   </e>
-<m>|   ' '  ; :,'_ /| :  . |   /       \  |   |  ,"' |  \  \.'  /  ,' ,'|   |   |  ,"' |        :   |    ; .   ; ,. :|  |   |    </m>
-<e>'   |  .'. ||  ' | |  . .  .--.  .-. | |   | /  | |   \  ;  ;   '  | |   |   | /  | |        |   :     \'   | |: ::__,'| :    </e>
-<c>|   | :  | '|  | ' |  | |   \__\/: . . |   | |  | |  / \  \  \  |  | :   |   | |  | |        |   |   . |'   | .; :  '  : |__  </c>
-<g>'   : |  : ;:  | : ;  ; |   ," .--.; | |   | |  |/  ;  /\  \  \ '  : |__ |   | |  |/         '   :  '; ||   :    |  |  | '.'| </g>
-<y>|   | '  ,/ '  :  `--'   \ /  /  ,.  | |   | |--' ./__;  \  ;  \|  | '.'||   | |--'          |   |  | ;  \   \  /   ;  :    ; </y>
-<r>;   : ;--'  :  ,      .-./;  :   .'   \|   |/     |   : / \  \  ;  :    ;|   |/              |   :   /    `----'    |  ,   /  </r>
-<m>|   ,/       `--`----'    |  ,     .-./'---'      ;   |/   \  ' |  ,   / '---'               |   | ,'                ---`-'   </m>
-<r>'---'                      `--`---'               `---'     `--` ---`-'                      `----'</r>
-    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
-""")
-    history_dir = store.get_data_dir("Hx_YingYing")
-    log_dir = Path(f"{history_dir}\yinying_chat").absolute()
-    log_dir.mkdir(parents=True, exist_ok=True)
-else:
-    lg.opt(colors=True).success( f"""
-    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
-<fg #60F5F5>,--,                                                                                                 </fg #60F5F5>                 
-<r>      ,--.'|                                       ,--,     ,--,                                 ,---,.               ___   </r> 
-<y>   ,--,  | :                                       |'. \   / .`|  ,--,                         ,'  .'  \            ,--.'|_   </y>
-<g>,---.'|  : '         ,--,                    ,---, ; \ `\ /' / ;,--.'|         ,---,         ,---.' .' |   ,---.    |  | :,' </g> 
-<c>|   | : _' |       ,'_ /|                ,-+-. /  |`. \  /  / .'|  |,      ,-+-. /  |        |   |  |: |  '   ,'\   :  : ' :  </c>
-<e>:   : |.'  |  .--. |  | :    ,--.--.    ,--.'|'   | \  \/  / ./ `--'_     ,--.'|'   |        :   :  :  / /   /   |.;__,'  /   </e>
-<m>|   ' '  ; :,'_ /| :  . |   /       \  |   |  ,"' |  \  \.'  /  ,' ,'|   |   |  ,"' |        :   |    ; .   ; ,. :|  |   |    </m>
-<e>'   |  .'. ||  ' | |  . .  .--.  .-. | |   | /  | |   \  ;  ;   '  | |   |   | /  | |        |   :     \'   | |: ::__,'| :    </e>
-<c>|   | :  | '|  | ' |  | |   \__\/: . . |   | |  | |  / \  \  \  |  | :   |   | |  | |        |   |   . |'   | .; :  '  : |__  </c>
-<g>'   : |  : ;:  | : ;  ; |   ," .--.; | |   | |  |/  ;  /\  \  \ '  : |__ |   | |  |/         '   :  '; ||   :    |  |  | '.'| </g>
-<y>|   | '  ,/ '  :  `--'   \ /  /  ,.  | |   | |--' ./__;  \  ;  \|  | '.'||   | |--'          |   |  | ;  \   \  /   ;  :    ; </y>
-<r>;   : ;--'  :  ,      .-./;  :   .'   \|   |/     |   : / \  \  ;  :    ;|   |/              |   :   /    `----'    |  ,   /  </r>
-<m>|   ,/       `--`----'    |  ,     .-./'---'      ;   |/   \  ' |  ,   / '---'               |   | ,'                ---`-'   </m>
-<r>'---'                      `--`---'               `---'     `--` ---`-'                      `----'</r>
-    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
-""")
-    logger.success("找到配置里的路径，载入成功")
-    history_dir = store.get_data_dir(f"{hx_config.hx_path}")
-    log_dir = Path(f"{history_dir}\yinying_chat").absolute()
-    log_dir.mkdir(parents=True, exist_ok=True)
+sys = platform.system()
+if sys == "Windows":
+    if hx_config.hx_path == None:
+        logger.warning("找不到配置里的路径，将使用默认配置[Windows]")
+        lg.opt(colors=True).success( f"""
+        <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+    <fg #60F5F5>,--,                                                                                                 </fg #60F5F5>                 
+    <r>      ,--.'|                                       ,--,     ,--,                                 ,---,.               ___   </r> 
+    <y>   ,--,  | :                                       |'. \   / .`|  ,--,                         ,'  .'  \            ,--.'|_   </y>
+    <g>,---.'|  : '         ,--,                    ,---, ; \ `\ /' / ;,--.'|         ,---,         ,---.' .' |   ,---.    |  | :,' </g> 
+    <c>|   | : _' |       ,'_ /|                ,-+-. /  |`. \  /  / .'|  |,      ,-+-. /  |        |   |  |: |  '   ,'\   :  : ' :  </c>
+    <e>:   : |.'  |  .--. |  | :    ,--.--.    ,--.'|'   | \  \/  / ./ `--'_     ,--.'|'   |        :   :  :  / /   /   |.;__,'  /   </e>
+    <m>|   ' '  ; :,'_ /| :  . |   /       \  |   |  ,"' |  \  \.'  /  ,' ,'|   |   |  ,"' |        :   |    ; .   ; ,. :|  |   |    </m>
+    <e>'   |  .'. ||  ' | |  . .  .--.  .-. | |   | /  | |   \  ;  ;   '  | |   |   | /  | |        |   :     \'   | |: ::__,'| :    </e>
+    <c>|   | :  | '|  | ' |  | |   \__\/: . . |   | |  | |  / \  \  \  |  | :   |   | |  | |        |   |   . |'   | .; :  '  : |__  </c>
+    <g>'   : |  : ;:  | : ;  ; |   ," .--.; | |   | |  |/  ;  /\  \  \ '  : |__ |   | |  |/         '   :  '; ||   :    |  |  | '.'| </g>
+    <y>|   | '  ,/ '  :  `--'   \ /  /  ,.  | |   | |--' ./__;  \  ;  \|  | '.'||   | |--'          |   |  | ;  \   \  /   ;  :    ; </y>
+    <r>;   : ;--'  :  ,      .-./;  :   .'   \|   |/     |   : / \  \  ;  :    ;|   |/              |   :   /    `----'    |  ,   /  </r>
+    <m>|   ,/       `--`----'    |  ,     .-./'---'      ;   |/   \  ' |  ,   / '---'               |   | ,'                ---`-'   </m>
+    <r>'---'                      `--`---'               `---'     `--` ---`-'                      `----'</r>
+        <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+    """)
+        history_dir = store.get_data_dir("Hx_YingYing")
+        log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+        log_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        lg.opt(colors=True).success( f"""
+        <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+    <fg #60F5F5>,--,                                                                                                 </fg #60F5F5>                 
+    <r>      ,--.'|                                       ,--,     ,--,                                 ,---,.               ___   </r> 
+    <y>   ,--,  | :                                       |'. \   / .`|  ,--,                         ,'  .'  \            ,--.'|_   </y>
+    <g>,---.'|  : '         ,--,                    ,---, ; \ `\ /' / ;,--.'|         ,---,         ,---.' .' |   ,---.    |  | :,' </g> 
+    <c>|   | : _' |       ,'_ /|                ,-+-. /  |`. \  /  / .'|  |,      ,-+-. /  |        |   |  |: |  '   ,'\   :  : ' :  </c>
+    <e>:   : |.'  |  .--. |  | :    ,--.--.    ,--.'|'   | \  \/  / ./ `--'_     ,--.'|'   |        :   :  :  / /   /   |.;__,'  /   </e>
+    <m>|   ' '  ; :,'_ /| :  . |   /       \  |   |  ,"' |  \  \.'  /  ,' ,'|   |   |  ,"' |        :   |    ; .   ; ,. :|  |   |    </m>
+    <e>'   |  .'. ||  ' | |  . .  .--.  .-. | |   | /  | |   \  ;  ;   '  | |   |   | /  | |        |   :     \'   | |: ::__,'| :    </e>
+    <c>|   | :  | '|  | ' |  | |   \__\/: . . |   | |  | |  / \  \  \  |  | :   |   | |  | |        |   |   . |'   | .; :  '  : |__  </c>
+    <g>'   : |  : ;:  | : ;  ; |   ," .--.; | |   | |  |/  ;  /\  \  \ '  : |__ |   | |  |/         '   :  '; ||   :    |  |  | '.'| </g>
+    <y>|   | '  ,/ '  :  `--'   \ /  /  ,.  | |   | |--' ./__;  \  ;  \|  | '.'||   | |--'          |   |  | ;  \   \  /   ;  :    ; </y>
+    <r>;   : ;--'  :  ,      .-./;  :   .'   \|   |/     |   : / \  \  ;  :    ;|   |/              |   :   /    `----'    |  ,   /  </r>
+    <m>|   ,/       `--`----'    |  ,     .-./'---'      ;   |/   \  ' |  ,   / '---'               |   | ,'                ---`-'   </m>
+    <r>'---'                      `--`---'               `---'     `--` ---`-'                      `----'</r>
+        <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+    """)
+        logger.success("找到配置里的路径，载入成功[Windows]")
+        history_dir = store.get_data_dir(f"{hx_config.hx_path}")
+        log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+        log_dir.mkdir(parents=True, exist_ok=True)
+elif sys == "Linux":
+    if hx_config.hx_path == None:
+        logger.warning("找不到配置里的路径，将使用默认配置[Linux]")
+        lg.opt(colors=True).success( f"""
+        <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+    <fg #60F5F5>,--,                                                                                                 </fg #60F5F5>                 
+    <r>      ,--.'|                                       ,--,     ,--,                                 ,---,.               ___   </r> 
+    <y>   ,--,  | :                                       |'. \   / .`|  ,--,                         ,'  .'  \            ,--.'|_   </y>
+    <g>,---.'|  : '         ,--,                    ,---, ; \ `\ /' / ;,--.'|         ,---,         ,---.' .' |   ,---.    |  | :,' </g> 
+    <c>|   | : _' |       ,'_ /|                ,-+-. /  |`. \  /  / .'|  |,      ,-+-. /  |        |   |  |: |  '   ,'\   :  : ' :  </c>
+    <e>:   : |.'  |  .--. |  | :    ,--.--.    ,--.'|'   | \  \/  / ./ `--'_     ,--.'|'   |        :   :  :  / /   /   |.;__,'  /   </e>
+    <m>|   ' '  ; :,'_ /| :  . |   /       \  |   |  ,"' |  \  \.'  /  ,' ,'|   |   |  ,"' |        :   |    ; .   ; ,. :|  |   |    </m>
+    <e>'   |  .'. ||  ' | |  . .  .--.  .-. | |   | /  | |   \  ;  ;   '  | |   |   | /  | |        |   :     \'   | |: ::__,'| :    </e>
+    <c>|   | :  | '|  | ' |  | |   \__\/: . . |   | |  | |  / \  \  \  |  | :   |   | |  | |        |   |   . |'   | .; :  '  : |__  </c>
+    <g>'   : |  : ;:  | : ;  ; |   ," .--.; | |   | |  |/  ;  /\  \  \ '  : |__ |   | |  |/         '   :  '; ||   :    |  |  | '.'| </g>
+    <y>|   | '  ,/ '  :  `--'   \ /  /  ,.  | |   | |--' ./__;  \  ;  \|  | '.'||   | |--'          |   |  | ;  \   \  /   ;  :    ; </y>
+    <r>;   : ;--'  :  ,      .-./;  :   .'   \|   |/     |   : / \  \  ;  :    ;|   |/              |   :   /    `----'    |  ,   /  </r>
+    <m>|   ,/       `--`----'    |  ,     .-./'---'      ;   |/   \  ' |  ,   / '---'               |   | ,'                ---`-'   </m>
+    <r>'---'                      `--`---'               `---'     `--` ---`-'                      `----'</r>
+        <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+    """)
+        history_dir = store.get_data_dir("Hx_YingYing")
+        log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_dir = Path(f"{history_dir}/yinying_chat").as_posix()
+    else:
+        logger.success("找到配置里的路径，载入成功[Linux]")
+        lg.opt(colors=True).success( f"""
+        <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+    <fg #60F5F5>,--,                                                                                                 </fg #60F5F5>                 
+    <r>      ,--.'|                                       ,--,     ,--,                                 ,---,.               ___   </r> 
+    <y>   ,--,  | :                                       |'. \   / .`|  ,--,                         ,'  .'  \            ,--.'|_   </y>
+    <g>,---.'|  : '         ,--,                    ,---, ; \ `\ /' / ;,--.'|         ,---,         ,---.' .' |   ,---.    |  | :,' </g> 
+    <c>|   | : _' |       ,'_ /|                ,-+-. /  |`. \  /  / .'|  |,      ,-+-. /  |        |   |  |: |  '   ,'\   :  : ' :  </c>
+    <e>:   : |.'  |  .--. |  | :    ,--.--.    ,--.'|'   | \  \/  / ./ `--'_     ,--.'|'   |        :   :  :  / /   /   |.;__,'  /   </e>
+    <m>|   ' '  ; :,'_ /| :  . |   /       \  |   |  ,"' |  \  \.'  /  ,' ,'|   |   |  ,"' |        :   |    ; .   ; ,. :|  |   |    </m>
+    <e>'   |  .'. ||  ' | |  . .  .--.  .-. | |   | /  | |   \  ;  ;   '  | |   |   | /  | |        |   :     \'   | |: ::__,'| :    </e>
+    <c>|   | :  | '|  | ' |  | |   \__\/: . . |   | |  | |  / \  \  \  |  | :   |   | |  | |        |   |   . |'   | .; :  '  : |__  </c>
+    <g>'   : |  : ;:  | : ;  ; |   ," .--.; | |   | |  |/  ;  /\  \  \ '  : |__ |   | |  |/         '   :  '; ||   :    |  |  | '.'| </g>
+    <y>|   | '  ,/ '  :  `--'   \ /  /  ,.  | |   | |--' ./__;  \  ;  \|  | '.'||   | |--'          |   |  | ;  \   \  /   ;  :    ; </y>
+    <r>;   : ;--'  :  ,      .-./;  :   .'   \|   |/     |   : / \  \  ;  :    ;|   |/              |   :   /    `----'    |  ,   /  </r>
+    <m>|   ,/       `--`----'    |  ,     .-./'---'      ;   |/   \  ' |  ,   / '---'               |   | ,'                ---`-'   </m>
+    <r>'---'                      `--`---'               `---'     `--` ---`-'                      `----'</r>
+        <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+    """)
+        history_dir = store.get_data_dir(f"{hx_config.hx_path}")
+        log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_dir = Path(f"{history_dir}/yinying_chat").as_posix()
 
 #判断模型
 def model_got(msg) -> str:
@@ -83,16 +135,31 @@ def model_got(msg) -> str:
 
 #path---in
 def path_in() -> str:
-    if hx_config.hx_path == None:
-        history_dir = store.get_data_dir("Hx_YingYing")
-        log_dir = Path(f"{history_dir}\yinying_chat").absolute()
-        log_dir.mkdir(parents=True, exist_ok=True)
-        return log_dir
-    else:
-        history_dir = store.get_data_dir(f"{hx_config.hx_path}")
-        log_dir = Path(f"{history_dir}\yinying_chat").absolute()
-        log_dir.mkdir(parents=True, exist_ok=True)
-        return log_dir
+    sys = platform.system()
+    if sys == "Windows":
+        if hx_config.hx_path == None:
+            history_dir = store.get_data_dir("Hx_YingYing")
+            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+            log_dir.mkdir(parents=True, exist_ok=True)
+            return log_dir
+        else:
+            history_dir = store.get_data_dir(f"{hx_config.hx_path}")
+            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+            log_dir.mkdir(parents=True, exist_ok=True)
+            return log_dir
+    elif sys == "Linux":
+        if hx_config.hx_path == None:
+            history_dir = store.get_data_dir("Hx_YingYing")
+            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_dir = Path(f"{history_dir}/yinying_chat").as_posix()
+            return log_dir
+        else:
+            history_dir = store.get_data_dir(f"{hx_config.hx_path}")
+            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_dir = Path(f"{history_dir}/yinying_chat").as_posix()
+            return log_dir
 
 #update-----Hx
 def update_hx():
@@ -163,24 +230,47 @@ def create_dir_usr(path):
     if not os.path.exists(path):
         os.mkdir(path)
 
+#获取json函数
+def json_get(json,key) -> str:
+    try:
+        back = json[f"{key}"]
+    except Exception as e:
+        back = False
+    return back
+
+def json_get_text(json,key) -> str:
+    try:
+        back = json[f"{key}"]
+    except Exception as e:
+        back = 0
+    return back
+
+def json_get_time(json,key) -> str:
+    try:
+        back = json[f"{key}"]
+    except Exception as e:
+        back = 1
+    return back
+
+
 #json转义防止爆炸（）
 def json_replace(text) -> str:
-    text = text.replace('\n','\\n')
-    text = text.replace('\t','\\t')
-    text = text.replace("'","\\'")
-    text = text.replace('"','\\"')
+    text = text.replace('\n','/n')
+    text = text.replace('\t','/t')
+    text = text.replace("'","/'")
+    text = text.replace('"','/"')
     return text
 
 #初始化log记录
 def log_in()-> str:
     try:
-        if os.path.exists(f"{log_dir}\\chat\\all_log.json"):
-            with open(f'{log_dir}\\chat\\all_log.json','r',encoding='utf-8') as file:
+        if os.path.exists(f"{log_dir}/chat/all_log.json"):
+            with open(f'{log_dir}/chat/all_log.json','r',encoding='utf-8') as file:
                 json_data = json.load(file)
                 back = json_data
         else:
-            create_dir_usr(f'{log_dir}\chat')
-            with open(f'{log_dir}\\chat\\all_log.json','w',encoding='utf-8') as file:
+            create_dir_usr(f'{log_dir}/chat')
+            with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
                 json_data = {}
                 package = {}
                 history_package = []
@@ -191,9 +281,9 @@ def log_in()-> str:
                 json.dump(json_data,file)
                 back = json_data
     except Exception as e:
-                create_dir_usr(f'{log_dir}\\chat')
+                create_dir_usr(f'{log_dir}/chat')
                 logger.warning("加载全局log记录时失败！，请不要随意修改bot插件本地文件")
-                with open(f'{log_dir}\\chat\\all_log.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
                     json_data = {}
                     package = {}
                     history_package = []
@@ -216,7 +306,7 @@ def user_in(id, text):
         package['msg'] = f'{text_r}'
         id_log.append(package)
         data[f'{id}']['log'] = id_log
-        with open(f'{log_dir}\\chat\\all_log.json','w',encoding='utf-8') as file:
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
             json.dump(data,file)
     else : 
         package = {}
@@ -231,7 +321,7 @@ def user_in(id, text):
         t = int(dt)
         log['time'] = t
         data[f'{id}'] = log
-        with open(f'{log_dir}\\chat\\all_log.json','w',encoding='utf-8') as file:
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
             json.dump(data,file)
 
 #AI输出
@@ -245,7 +335,7 @@ def ai_out(id, text):
         package['msg'] = f'{text_r}'
         id_log.append(package)
         data[f'{id}']['log'] = id_log
-        with open(f'{log_dir}\\chat\\all_log.json','w',encoding='utf-8') as file:
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
             json.dump(data,file)
     else : 
         package = {}
@@ -260,15 +350,15 @@ def ai_out(id, text):
         t = int(dt)
         log['time'] = t
         data[f'{id}'] = log
-        with open(f'{log_dir}\\chat\\all_log.json','w',encoding='utf-8') as file:
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
             json.dump(data,file)
 
 
 #载入本地保存的easycyber预设(一些情况下失败时不会清空，请找到专业人员修复)
 def easycyber_in(cybernick,json_1) -> str:
     try:
-        if os.path.exists(f"{log_dir}\config\easycyber.json"):
-            with open(f'{log_dir}\config\easycyber.json','r',encoding='utf-8') as file:
+        if os.path.exists(f"{log_dir}/config/easycyber.json"):
+            with open(f'{log_dir}/config/easycyber.json','r',encoding='utf-8') as file:
                 json_data = json.load(file)
                 if cybernick in json_data or not json_1 or not cybernick:
                     back = json_data
@@ -281,12 +371,12 @@ def easycyber_in(cybernick,json_1) -> str:
                     package_easycyberfurry["last_update"] = t
                     package_easycyberfurry["id"] = dw
                     json_data[f"{cybernick}"] = package_easycyberfurry
-                    with open(f'{log_dir}\config\easycyber.json','w',encoding='utf-8') as file:
+                    with open(f'{log_dir}/config/easycyber.json','w',encoding='utf-8') as file:
                         json.dump(json_data,file)
                     back = json_data
         else:
-            create_dir_usr(f"{log_dir}\config")
-            with open(f'{log_dir}\config\easycyber.json','w',encoding='utf-8') as file:
+            create_dir_usr(f"{log_dir}/config")
+            with open(f'{log_dir}/config/easycyber.json','w',encoding='utf-8') as file:
                 dt = time.time()
                 t = int(dt)
                 global_easycyberfurry = {}
@@ -326,7 +416,7 @@ def easycyber_in(cybernick,json_1) -> str:
             easycyber_package["last_update"] = t
             easycyber_package["id"] = 0
             json_data["Hx"] = easycyber_package
-            with open(f'{log_dir}\config\easycyber.json','w',encoding='utf-8') as file:
+            with open(f'{log_dir}/config/easycyber.json','w',encoding='utf-8') as file:
                 json.dump(json_data,file)
             back = json_data
         else:
@@ -339,8 +429,8 @@ def easycyber_in(cybernick,json_1) -> str:
 #载入本地投稿的easycyber预设(载入失败会被清空
 def easycyber_in_tg(cybernick,json_1) -> str:
     try:
-        if os.path.exists(f"{log_dir}\\file\easycyber_tg.json"):
-            with open(f'{log_dir}\\file\easycyber_tg.json','r',encoding='utf-8') as file:
+        if os.path.exists(f"{log_dir}/file/easycyber_tg.json"):
+            with open(f'{log_dir}/file/easycyber_tg.json','r',encoding='utf-8') as file:
                 json_data = json.load(file)
                 if cybernick in json_data or not json_1 or not cybernick:
                     back = json_data
@@ -353,12 +443,12 @@ def easycyber_in_tg(cybernick,json_1) -> str:
                     package_easycyberfurry["last_update"] = t
                     package_easycyberfurry["id"] = dw
                     json_data[f"{cybernick}"] = package_easycyberfurry
-                    with open(f'{log_dir}\\file\easycyber_tg.json','w',encoding='utf-8') as file:
+                    with open(f'{log_dir}/file/easycyber_tg.json','w',encoding='utf-8') as file:
                         json.dump(json_data,file)
                     back = json_data
         else:
-            create_dir_usr(f"{log_dir}\\file")
-            with open(f'{log_dir}\\file\easycyber_tg.json','w',encoding='utf-8') as file:
+            create_dir_usr(f"{log_dir}/file")
+            with open(f'{log_dir}/file/easycyber_tg.json','w',encoding='utf-8') as file:
                 dt = time.time()
                 t = int(dt)
                 global_easycyberfurry = {}
@@ -386,15 +476,15 @@ def easycyber_in_tg(cybernick,json_1) -> str:
                 easycyber_package["last_update"] = t
                 easycyber_package["id"] = 0
                 global_easycyberfurry["保留查询"] = easycyber_package
-                with open(f'{log_dir}\\file\easycyber_tg.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/file/easycyber_tg.json','w',encoding='utf-8') as file:
                     json.dump(global_easycyberfurry,file)
                 back = global_easycyberfurry
             else:
                 logger.error(f"加载本地投稿easycyberfurry时失败！，请不要随意修改bot插件本地文件。。。。！")
                 logger.warning("你要为你的行为负责，来自不知名开发者")
                 logger.warning(f"报错捕获{e}")
-                create_dir_usr(f"{log_dir}\\file")
-                with open(f'{log_dir}\\file\easycyber_tg.json','w',encoding='utf-8') as file:
+                create_dir_usr(f"{log_dir}/file")
+                with open(f'{log_dir}/file/easycyber_tg.json','w',encoding='utf-8') as file:
                     dt = time.time()
                     t = int(dt)
                     global_easycyberfurry = {}
@@ -411,8 +501,8 @@ def easycyber_in_tg(cybernick,json_1) -> str:
 #载入本地保存的cyber预设(一些情况下失败时不会清空，请找到专业人员修复)
 def cyber_in(cybernick,json_1) -> str:
     try:
-        if os.path.exists(f"{log_dir}\config\cyber.json"):
-            with open(f'{log_dir}\config\cyber.json','r',encoding='utf-8') as file:
+        if os.path.exists(f"{log_dir}/config/cyber.json"):
+            with open(f'{log_dir}/config/cyber.json','r',encoding='utf-8') as file:
                 json_data = json.load(file)
                 if cybernick in json_data or not json_1 or not cybernick:
                     back = json_data
@@ -425,12 +515,12 @@ def cyber_in(cybernick,json_1) -> str:
                     package_cyberfurry["last_update"] = t
                     package_cyberfurry["id"] = dw
                     json_data[f"{cybernick}"] = package_cyberfurry
-                    with open(f'{log_dir}\config\cyber.json','w',encoding='utf-8') as file:
+                    with open(f'{log_dir}/config/cyber.json','w',encoding='utf-8') as file:
                         json.dump(json_data,file)
                     back = json_data
         else:
-            create_dir_usr(f"{log_dir}\config")
-            with open(f'{log_dir}\config\cyber.json','w',encoding='utf-8') as file:
+            create_dir_usr(f"{log_dir}/config")
+            with open(f'{log_dir}/config/cyber.json','w',encoding='utf-8') as file:
                 dt = time.time()
                 t = int(dt)
                 global_cyberfurry = {}
@@ -464,7 +554,7 @@ def cyber_in(cybernick,json_1) -> str:
             package_cyberfurry["public"] = True
             package_cyberfurry["id"] = 0
             json_data["Hx"] = package_cyberfurry
-            with open(f'{log_dir}\config\cyber.json','w',encoding='utf-8') as file:
+            with open(f'{log_dir}/config/cyber.json','w',encoding='utf-8') as file:
                 json.dump(json_data,file)
             back = json_data
         else:
@@ -477,8 +567,8 @@ def cyber_in(cybernick,json_1) -> str:
 #载入本地投稿的cyber预设(载入失败会被清空
 def cyber_in_tg(cybernick,json_1) -> str:
     try:
-        if os.path.exists(f"{log_dir}\\file\cyber_tg.json"):
-            with open(f'{log_dir}\\file\cyber_tg.json','r',encoding='utf-8') as file:
+        if os.path.exists(f"{log_dir}/file/cyber_tg.json"):
+            with open(f'{log_dir}/file/cyber_tg.json','r',encoding='utf-8') as file:
                 json_data = json.load(file)
                 if cybernick in json_data or not json_1 or not cybernick:
                     back = json_data
@@ -491,12 +581,12 @@ def cyber_in_tg(cybernick,json_1) -> str:
                     package_easycyberfurry["last_update"] = t
                     package_easycyberfurry["id"] = dw
                     json_data[f"{cybernick}"] = package_easycyberfurry
-                    with open(f'{log_dir}\\file\cyber_tg.json','w',encoding='utf-8') as file:
+                    with open(f'{log_dir}/file/cyber_tg.json','w',encoding='utf-8') as file:
                         json.dump(json_data,file)
                     back = json_data
         else:
-            create_dir_usr(f"{log_dir}\\file")
-            with open(f'{log_dir}\\file\cyber_tg.json','w',encoding='utf-8') as file:
+            create_dir_usr(f"{log_dir}/file")
+            with open(f'{log_dir}/file/cyber_tg.json','w',encoding='utf-8') as file:
                 dt = time.time()
                 t = int(dt)
                 global_easycyberfurry = {}
@@ -520,15 +610,15 @@ def cyber_in_tg(cybernick,json_1) -> str:
                 easycyber_package["last_update"] = t
                 easycyber_package["id"] = 0
                 global_easycyberfurry["保留查询"] = easycyber_package
-                with open(f'{log_dir}\\file\cyber_tg.json','w',encoding='utf-8') as file:
+                with open(f'{log_dir}/file/cyber_tg.json','w',encoding='utf-8') as file:
                     json.dump(global_easycyberfurry,file)
                 back = global_easycyberfurry
             else:
                 logger.error(f"加载本地投稿cyberfurry时失败！，请不要随意修改bot插件本地文件。。。。！")
                 logger.warning("你要为你的行为负责，来自不知名开发者")
                 logger.warning(f"报错捕获{e}")
-                create_dir_usr(f"{log_dir}\\file")
-                with open(f'{log_dir}\\file\cyber_tg.json','w',encoding='utf-8') as file:
+                create_dir_usr(f"{log_dir}/file")
+                with open(f'{log_dir}/file/cyber_tg.json','w',encoding='utf-8') as file:
                     dt = time.time()
                     t = int(dt)
                     global_easycyberfurry = {}
@@ -545,33 +635,35 @@ def cyber_in_tg(cybernick,json_1) -> str:
 #载入全局本地配置
 def config_in_global() -> str:
     try:
-        if os.path.exists(f"{log_dir}\config\config_global.json"):
-            with open(f'{log_dir}\config\config_global.json','r',encoding='utf-8') as file:
+        if os.path.exists(f"{log_dir}/config/config_global.json"):
+            with open(f'{log_dir}/config/config_global.json','r',encoding='utf-8') as file:
                 json_data = json.load(file)
                 back = json_data
         else:
-            create_dir_usr(f"{log_dir}\config")
-            with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
+            create_dir_usr(f"{log_dir}/config")
+            with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                 json_data = {}
                 admin_user = []
                 black_user = []
                 black_group = []
                 black_world = []
-                write_group = []
+                white_group = []
                 dy_list_r = []
-                write_user = []
+                white_user = []
                 json_data['global_switch'] = True
                 json_data['admin_pro'] = None
                 json_data['admin_group'] = None
                 json_data['admin_group_switch'] = True
                 json_data['admin_user_switch'] = False
                 json_data['limit'] = 12
+                json_data['at_reply'] = True
                 json_data['reply'] = False
                 json_data['reply_at'] = False
                 json_data['private'] = True
                 json_data['dy_list'] = dy_list_r
-                json_data['write_user'] = write_user
-                json_data['write_group'] = write_group
+                json_data['rule_model'] = "black"
+                json_data['white_user'] = white_user
+                json_data['white_group'] = white_group
                 json_data['admin_user'] = admin_user
                 json_data['blacklist_user'] = black_user
                 json_data['blacklist_group'] = black_group
@@ -579,31 +671,33 @@ def config_in_global() -> str:
                 json.dump(json_data,file)
                 back = json_data
     except Exception as e:
-            create_dir_usr(f"{log_dir}\config")
+            create_dir_usr(f"{log_dir}/config")
             logger.error(f"加载全局配置时失败！，请不要随意修改bot插件本地文件,现已重置所有群聊配置")
             logger.warning("你要为你的行为负责，来自不知名开发者")
             logger.warning(f"报错捕获{e}")
-            with open(f'{log_dir}\config\config_global.json','w',encoding='utf-8') as file:
+            with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                 json_data = {}
                 admin_user = []
                 black_user = []
                 black_group = []
                 black_world = []
-                write_group = []
+                white_group = []
                 dy_list_r = []
-                write_user = []
+                white_user = []
                 json_data['global_switch'] = True
                 json_data['admin_pro'] = None
                 json_data['admin_group'] = None
                 json_data['admin_group_switch'] = True
                 json_data['admin_user_switch'] = False
                 json_data['limit'] = 12
+                json_data['at_reply'] = True
                 json_data['reply'] = False
                 json_data['reply_at'] = False
                 json_data['private'] = True
                 json_data['dy_list'] = dy_list_r
-                json_data['write_user'] = write_user
-                json_data['write_group'] = write_group
+                json_data['rule_model'] = "black"
+                json_data['white_user'] = white_user
+                json_data['white_group'] = white_group
                 json_data['admin_user'] = admin_user
                 json_data['blacklist_user'] = black_user
                 json_data['blacklist_group'] = black_group
@@ -615,8 +709,8 @@ def config_in_global() -> str:
 #载入群聊本地配置
 def config_in_group(groupid) -> str:
     try:
-        if os.path.exists(f"{log_dir}\config\config_group.json"):
-            with open(f'{log_dir}\config\config_group.json','r',encoding='utf-8') as file:
+        if os.path.exists(f"{log_dir}/config/config_group.json"):
+            with open(f'{log_dir}/config/config_group.json','r',encoding='utf-8') as file:
                 json_data = json.load(file)
                 if groupid in json_data:
                     back = json_data
@@ -631,12 +725,12 @@ def config_in_group(groupid) -> str:
                     id_package['first_chattime'] = t
                     id_package['last_chattime'] = t
                     json_data[f"{groupid}"] = id_package
-                    with open(f'{log_dir}\config\config_group.json','w',encoding='utf-8') as file:
+                    with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
                         json.dump(json_data,file)
                         back = json_data
         else:
-            create_dir_usr(f"{log_dir}\config")
-            with open(f'{log_dir}\config\config_group.json','w',encoding='utf-8') as file:
+            create_dir_usr(f"{log_dir}/config")
+            with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
                 dt = time.time()
                 t = int(dt)
                 json_data = {}
@@ -654,7 +748,7 @@ def config_in_group(groupid) -> str:
             logger.error(f"加载群聊{groupid}配置时失败！，请不要随意修改bot插件本地文件,现已重置所有群聊配置")
             logger.warning("你要为你的行为负责，来自不知名开发者")
             logger.warning(f"报错捕获{e}")
-            with open(f'{log_dir}\config\config_group.json','w',encoding='utf-8') as file:
+            with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
                 dt = time.time()
                 t = int(dt)
                 json_data = {}
@@ -673,8 +767,8 @@ def config_in_group(groupid) -> str:
 #载入个人本地配置
 def config_in_user(id,nick) -> str:
     try:
-        if os.path.exists(f"{log_dir}\config\config_user.json"):
-            with open(f'{log_dir}\config\config_user.json','r',encoding='utf-8') as file:
+        if os.path.exists(f"{log_dir}/config/config_user.json"):
+            with open(f'{log_dir}/config/config_user.json','r',encoding='utf-8') as file:
                 json_data = json.load(file)
                 if id in json_data and nick:
                     back = json_data
@@ -697,7 +791,7 @@ def config_in_user(id,nick) -> str:
                     id_package['first_chattime'] = t
                     id_package['last_chattime'] = t
                     json_data[f"{id}"] = id_package
-                    with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+                    with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                         json.dump(json_data,file)
                         back = json_data
                 else:
@@ -717,12 +811,12 @@ def config_in_user(id,nick) -> str:
                     id_package['first_chattime'] = t
                     id_package['last_chattime'] = t
                     json_data[f"{id}"] = id_package
-                    with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+                    with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                         json.dump(json_data,file)
                         back = json_data
         else:
-            create_dir_usr(f"{log_dir}\config")
-            with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+            create_dir_usr(f"{log_dir}/config")
+            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                 dt = time.time()
                 t = int(dt)
                 json_data = {}
@@ -746,7 +840,7 @@ def config_in_user(id,nick) -> str:
             logger.error(f"加载用户{id}配置时失败！，请不要随意修改bot插件本地文件,现已重置所有用户配置")
             logger.warning("你要为你的行为负责，来自不知名开发者")
             logger.warning(f"报错捕获{e}")
-            with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                 dt = time.time()
                 t = int(dt)
                 json_data = {}
@@ -791,6 +885,19 @@ def config_list(config):
         logger.error(f"报错定位于获取配置内鉴值")
     return tf_key, w_key, list_key
 
+#获取nonebot超级管理组
+def get_superuser() -> list:
+    list_superuser = get_driver().config.superusers
+    try:
+        if list_superuser == None or not list_superuser:
+            superuser = ["3485462167"]
+        else:
+            superuser = get_driver().config.superusers
+    except Exception as e:
+            logger.warning(f"报错捕获{e}")
+            superuser = ["3485462167"]
+    return superuser
+
 #全局权限检查！！！！！（总算写出来了）
 def place(id) -> int:
     try:
@@ -798,9 +905,9 @@ def place(id) -> int:
         admin_pro = json_get(config,"admin_pro")
         admin_user = json_get(config,"admin_user")
         black_list = json_get(config,"blacklist_user")
-        superuser = get_driver().config.superusers
+        superuser = get_superuser()
         logger.warning(f"user捕获{superuser}")
-        if id in superuser:
+        if f"{id}" in superuser:
             place_user = 10
         elif id == admin_pro:
             place_user = 10
@@ -815,11 +922,105 @@ def place(id) -> int:
             place_user = 5
     return place_user
 
+#rule---管理组
+async def chek_rule_admin(event:MessageEvent):
+    id = get_id(event)
+    config = config_in_global()
+    admin_list = json_get(config,"admin_user")
+    admin_pro = json_get(config,"admin_pro")
+    supuser = get_superuser()
+    try:
+        if id in admin_list or id == admin_pro or id in supuser:
+            return True
+        else:
+            return False
+    except Exception as e:
+            logger.error(f"报错捕获{e}")
+            logger.error(f"你的配置文件错误或已过时！！，权限控制失效！")
+            return True
+
+#rule---用户组
+async def chek_rule_base(bot:Bot,event:MessageEvent,eve:Event):
+    id = get_id(event)
+    groupid = get_groupid(event)
+    config = config_in_global()
+    admin_list = json_get(config, "admin_user")
+    admin_pro = json_get(config, "admin_pro")
+    supuser = get_superuser()
+    white_group = json_get(config, "white_group")
+    white_user = json_get(config, "white_user")
+    black_group = json_get(config, "blacklist_group")
+    black_user = json_get(config, "blacklist_user")
+    rule_mode = json_get(config, "rule_model")
+    at_reply = json_get(config, "at_reply")
+    private = json_get(config, "private")
+    try:
+        if isinstance(eve, GroupMessageEvent):
+            to_bot = event.to_me
+            if rule_mode == "black":
+                if id in admin_list or id == admin_pro or id in supuser:
+                    return True
+                elif groupid in white_group or id in white_user:
+                    return True
+                elif groupid in black_group:
+                    return False
+                elif id in black_user:
+                    return False
+                elif at_reply is False and to_bot:
+                    logger.warning(f"配置文件中该项配置为False，该消息不予处理")
+                    return False
+                else:
+                    return True
+            elif rule_mode == "white":
+                if id in admin_list or id == admin_pro or id in supuser:
+                    return True
+                elif at_reply is False and to_bot:
+                    return False
+                elif groupid in white_group or id in white_user:
+                    return True
+                else:
+                    return False
+            else:
+                logger.error(f"你的配置文件错误或已过时！！，权限控制失效！")
+                return True
+        elif not isinstance(eve, GroupMessageEvent) and private is False:
+            return False
+        else:
+            if rule_mode == "black":
+                if id in admin_list or id == admin_pro or id in supuser:
+                    return True
+                elif groupid in white_group or id in white_user:
+                    return True
+                elif groupid in black_group:
+                    return False
+                elif id in black_user:
+                    return False
+                elif at_reply is False:
+                    return False
+                else:
+                    return True
+            elif rule_mode == "white":
+                if id in admin_list or id == admin_pro or id in supuser or id in white_user:
+                    return True
+                elif at_reply is False:
+                    return False
+                elif groupid in json_get(config,"white_group"):
+                    return True
+                else:
+                    return False
+            else:
+                logger.error(f"你的配置文件错误或已过时！！，权限控制失效！")
+                return True
+    except Exception as e:
+            logger.error(f"报错捕获{e}")
+            logger.error(f"你的配置文件错5654误或已过时！！，权限控制失效！")
+            return True
+
 #尝试获取bot本地文件夹文件
 def file_get(file) -> str:
     try:
-        if os.path.exists(f"{log_dir}\\file\\{file}"):
-            back = True
+        if os.path.exists(f"{log_dir}/file/{file}"):
+            back = f"{log_dir}/file/{file}"
         else:
             back = False
     except Exception as e:
@@ -866,6 +1067,7 @@ async def get_history(id,bot,event) -> List[MessageSegment]:
             )
         ]
     return msg_list
+
 
 #全局配置卡片构建
 async def get_config_global() -> List[MessageSegment]:
@@ -957,6 +1159,7 @@ async def get_config_global() -> List[MessageSegment]:
                     content=Message("【重要】以下为bot全局配置"),
                 ),)
     except Exception as e:
+        logger.error(f"{e}")
         msg_list = [
             MessageSegment.node_custom(
                 user_id=3485462167,
@@ -971,17 +1174,17 @@ def chat_times(id,nick) -> int:
     data = log_in()
     history = data[f"{id}"]['log']
     times = int(len(history)/2 + 0.5)
-    limit = json_get(config_in_global(),"limit")
+    limit = int(json_get(config_in_global(),"limit"))
     config = config_in_user(id,nick)
-    if times >= limit:
+    if times > limit:
         dt = time.time()
         t = int(dt)
         data[f'{id}']['time'] = t
         data[f"{id}"]['log'] = []
         config[f"{id}"]["time"] = t
-        with open(f'{log_dir}\\chat\\all_log.json','w',encoding='utf-8') as file:
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
             json.dump(data,file)
-            with open(f'{log_dir}\\config\\config_user.json','w',encoding='utf-8') as user:
+            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as user:
                 json.dump(config,user)
                 return 0
     else:
@@ -1013,27 +1216,6 @@ async def gen_chat_text(event, bot: Bot) -> str:
                         msg
     return msg
 
-#获取json函数
-def json_get(json,key) -> str:
-    try:
-        back = json[f"{key}"]
-    except Exception as e:
-        back = False
-    return back
-
-def json_get_text(json,key) -> str:
-    try:
-        back = json[f"{key}"]
-    except Exception as e:
-        back = 0
-    return back
-
-def json_get_time(json,key) -> str:
-    try:
-        back = json[f"{key}"]
-    except Exception as e:
-        back = 1
-    return back
 
 #手动刷新对话
 def clear_id(id,nick) -> str:
@@ -1045,9 +1227,9 @@ def clear_id(id,nick) -> str:
     config = config_in_user(id,nick)
     config[f"{id}"]["time"] = t
     try:
-        with open(f'{log_dir}\\chat\\all_log.json','w',encoding='utf-8') as file:
+        with open(f'{log_dir}/chat/all_log.json','w',encoding='utf-8') as file:
             json.dump(data,file)
-            with open(f'{log_dir}\\config\\config_user.json','w',encoding='utf-8') as user:
+            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as user:
                 json.dump(config,user)
                 zt = True
     except Exception as e:
@@ -1350,7 +1532,7 @@ async def get_answer_at(matcher, event, bot):
             nick = await get_nick(bot,event)
             user_in(id,json_replace(text))
             back_msg = str(await yinying(groupid,id,text,nick))
-            msg = back_msg.replace("\\n","\n")
+            msg = back_msg.replace("/n","\n")
             await send_msg(matcher,event,msg)
         except httpx.HTTPError as e:
             back_msg = f"请求接口报错！\n返回结果：{e}"
@@ -1366,7 +1548,7 @@ async def get_answer_ml(matcher, event ,bot ,msg):
             nick = await get_nick(bot,event)
             user_in(id,json_replace(text))
             back_msg = str(await yinying(groupid,id,text,nick))
-            msg = back_msg.replace("\\n","\n")
+            msg = back_msg.replace("/n","\n")
             await send_msg(matcher,event,msg)
         except httpx.HTTPError as e:
             back_msg = f"请求接口报错！\n返回结果：{e}"
