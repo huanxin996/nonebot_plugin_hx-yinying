@@ -6,7 +6,8 @@ from .chat import(
     path_in,
     create_dir_usr,
 )
-from nonebot import get_plugin_config
+from nonebot import get_plugin_config,require
+require("nonebot_plugin_htmlrender")
 from nonebot_plugin_htmlrender import template_to_pic
 from loguru import logger
 from tqdm import tqdm
