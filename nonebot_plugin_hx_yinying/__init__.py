@@ -109,8 +109,9 @@ admin_set = on_command("控制台操作", aliases={"管理控制台","setstart"}
 verision = on_command("确认版本", aliases={"旅行伙伴确认","版本确认"},rule=Rule(chek_rule_base),  priority=0, block=True)
 character = on_command("sd", aliases={"旅行伙伴加入","设定加入"},rule=Rule(chek_rule_base),  priority=0, block=True)
 chat_ne = on_command("加入订阅", aliases={"旅行伙伴觉醒","订阅加入"},rule=Rule(chek_rule_base),  priority=0, block=True)
-ces = on_command("ces", aliases={"测试"},rule=Rule(chek_rule_base), priority=0, block=True)
+ces = on_command("测试服务", aliases={"测试报错"},rule=Rule(chek_rule_base), priority=0, block=True)
 
+#自定义自己的设定
 @character.handle()
 async def character(matcher: Matcher,bot:Bot, event: MessageEvent, msg: Message = CommandArg()):
     user = get_id(event)
@@ -144,7 +145,8 @@ async def character(matcher: Matcher,bot:Bot, event: MessageEvent, msg: Message 
         except Exception as e:
             msg = False
             logger.opt(colors=True).error(f"{e}")
-        
+
+#版本确认
 @verision.handle()
 async def verision_get(matcher: Matcher, event: MessageEvent):
     new_verision, time = update_hx()
@@ -209,14 +211,17 @@ async def verision_get(matcher: Matcher, event: MessageEvent):
                 msg = f"(点头)\n======================\n当前版本号:v{hx_config.hx_version}[最新！]\n当前私聊使用模型:{model}\n最后更新时间:====>\n{time}\n======================"
         await send_msg(matcher, event, msg)
 
+#@对话
 @msg_at.handle()
 async def at(matcher: Matcher, event: MessageEvent, bot: Bot):
     await get_answer_at(matcher, event, bot)
 
+#指令对话
 @msg_ml.handle()
 async def ml(matcher: Matcher, event: MessageEvent, bot: Bot, msg: Message = CommandArg()):
     await get_answer_ml(matcher, event, bot ,msg)
 
+#刷新对话
 @clear.handle()
 async def clear(matcher: Matcher,bot:Bot, event: MessageEvent):
     id = get_id(event)
@@ -228,6 +233,7 @@ async def clear(matcher: Matcher,bot:Bot, event: MessageEvent):
         msg = "刷新对话失败，请检查后台输出或联系开发者！"
         await send_msg(matcher, event, msg)
 
+#设置全局配置
 @set_global_config.got(
     "msg",
     prompt=f"发送以下选项执行相应功能\n修改 #修改全局配置项\n查看 #查看全局配置项\n追加 #向全局配置里追加配置项，通常用于插件更新后配置不存在导致的出错\n查看所有配置 #列出所有全局配置\n发送非预期命令则退出",
@@ -240,7 +246,7 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
     if s["last"]:
         if s["last"] == "查看":
             config = config_in_global()
-            get_config = json_get_text(config,text)
+            get_config = await json_get_text(config,text)
             if get_config == 0:
                 s["last"] = True
                 msg = f"无法查找到该配置项！，请检查其是否为正确的配置名{text}"
@@ -252,13 +258,12 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
 
         if s["last"] == "修改":
             config = config_in_global()
-            get_config = json_get_text(config,text)
-            if get_config == 0:
+            if text == "退出":
                 s["last"] = True
-                msg = "无法查找到该配置项！，请检查其是否为正确的配置名"
+                msg = "已退出"
                 await send_msg(matcher,event,msg)
             else:
-                TFkey, Wkey, Listkey = config_list(config)
+                TFkey, Wkey, Listkey = await config_list(config)
                 if text in TFkey:
                     s["last"] = "修改TF"
                     s["set"] = text
@@ -267,7 +272,7 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
                 elif text in Wkey:
                     s["last"] = "修改w"
                     s["set"] = text
-                    msg = "请发送id（群号或者QQ号，看你改哪个配置项）"
+                    msg = "请发送id（群号或者QQ号或者是对话限制次数，看你改哪个配置项）"
                     await send_msg_reject(matcher,event,msg)
                 elif text in Listkey:
                     s["last"] = "updata_LK"
@@ -275,28 +280,29 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
                     msg = "请发送添加或删除【也可以是增加或者移除】"
                     await send_msg_reject(matcher,event,msg)
                 else:
+                    s["last"] = "修改"
+                    msg = "无法查找到该配置项！，请检查其是否为正确的配置名,请重新输入！\n如需退出请发送退出"
+                    await send_msg_reject(matcher,event,msg)
                     return
         
         if s["last"] == "修改TF":
             config = config_in_global()
             config_name = s["set"]
-            get_config = json_get_text(config,config_name)
+            get_config = await json_get_text(config,config_name)
+            logger.debug(f"{get_config}")
             key = {"on":False,"off":False,"开":True,"关":False,"开启":True,"关闭":False}
             if text in key:
                 s["last"] = True
                 text = key[f"{text}"]
                 if get_config and text:
                     msg = f"该配置项[{config_name}]已经开启了，不需要重复开启噢"
-                    await send_msg(matcher,event,msg)
                 elif not get_config and not text:
                     msg = f"该配置项[{config_name}]已经关闭了，不需要重复关闭噢"
-                    await send_msg(matcher,event,msg)
                 elif text:
                     config[f"{config_name}"] = True
                     with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                         json.dump(config,file)
                     msg = f"{config_name}的状态已更改为{text}"
-                    await send_msg(matcher,event,msg)
                 elif not text:
                     config[f"{config_name}"] = False
                     with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
@@ -311,7 +317,7 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
         if s["last"] == "修改w":
             config = config_in_global()
             config_name = s["set"]
-            get_config = json_get_text(config,config_name)
+            get_config = await json_get_text(config,config_name)
             config[f"{config_name}"] = int(text)
             with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                 json.dump(config,file)
@@ -390,6 +396,7 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
         msg = f"未知命令“{text}”，已退出"
         await send_msg(matcher,event,msg)
 
+#导出历史记录（私人消息转发
 @history_get.handle()
 async def history(bot: Bot, event: MessageEvent,events: Event):
     id = get_id(event)
@@ -399,11 +406,13 @@ async def history(bot: Bot, event: MessageEvent,events: Event):
     else:
         await bot.send_private_forward_msg(user_id=id, messages=msg_list)  # type: ignore
 
+#获取模型列表
 @model_list.handle()
 async def list(matcher: Matcher, event: MessageEvent):
         msg = "1.yinyingllm-v1\n2.yinyingllm-v2\n3.yinyingllm-v3\n4.cyberfurry-001\n5.easycyberfurry-001\n切换模型请发送:切换模型(序号)"
         await send_msg(matcher, event, msg)
 
+#模型切换方面
 @model_handoff.handle()
 async def handoff(matcher: Matcher, bot: Bot, event: MessageEvent,events: Event, msg: Message = CommandArg()):
     text = msg.extract_plain_text()
@@ -446,6 +455,7 @@ async def handoff(matcher: Matcher, bot: Bot, event: MessageEvent,events: Event,
         msg = "请注意，切换模型后不能为空哦"
         await send_msg(matcher,event,msg)
 
+#easycyber操作（投稿和载入和查看）
 @easycyber_set.got(
     "msg",
     prompt=f"发送以下选项执行相应功能\n投稿 #投稿自定义预设(不允许同名)\n载入 #载入自定义预设(不允许不存在)\n查看列表 #列出所有公开的自定义预设\n退出 #退出设置\n发送非预期命令则退出",
@@ -462,6 +472,14 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                 s["last"] = True
                 msg = "easycyber预设“Hx”不能删除或修改，如要改动请改源码"
                 await send_msg(matcher,event,msg)
+            elif text == "退出":
+                s["last"] = True
+                msg = "已退出"
+                await send_msg(matcher,event,msg)
+            elif text in easycyber_in_tg(text,False) or text in easycyber_in(text,False):
+                s["last"] = "增加"
+                msg = "该预设角色名称已经存在，请不要重复使用该昵称，请重新输入，如需退出请发送退出"
+                await send_msg_reject(matcher,event,msg)
             else:
                 s["cfnickname"] = text
                 s["last"] = "cfSpecies"
@@ -553,43 +571,27 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                     u = json_get(config_in_global(),"admin_pro")
                     g_k = json_get(config_in_global(),"admin_group_switch")
                     u_k = json_get(config_in_global(),"admin_user_switch")
-                    if not g and u:
-                        logger.opt(colors=True).success(f"{g},{u}")
+                    msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\n物种:{species}\n年龄:{age}\n回复风格:{stytle}\n角色故事:{story}\n==========="
+                    msg = "投稿成功！，等待审核(问就是权限还没写好)]"
+                    if not g and not u:
                         msg ="bot管理者未配置，超级管理员和bot控制台,审核失败！"
-                    elif u == None and g == None:
-                        logger.opt(colors=True).success("false")
-                        msg ="bot管理者未配置，超级管理员和bot控制台,审核失败！"
-                    elif u == None and g_k:
+                    elif not u and g:
                         easycyber_in_tg(cybernick,easycyber_package)
-                        groupid = json_get(config_in_global(),"admin_group")
-                        msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\n物种:{species}\n年龄:{age}\n回复风格:{stytle}\n角色故事:{story}\n==========="
-                        await bot.call_api("send_group_msg",group_id=groupid, message=msg_tg)
-                        msg = "投稿成功！，等待审核(问就是权限还没写好)]"
-                    elif g == None and u_k:
+                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
+                    elif not g and u:
                         easycyber_in_tg(cybernick,easycyber_package)
-                        adminid = json_get(config_in_global(),"admin_pro")
-                        msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\物种:{species}\n年龄:{age}\n回复风格:{stytle}\n角色故事:{story}\n==========="
-                        await bot.call_api("send_private_msg",user_id=adminid, messages=msg_tg)
-                        msg = "投稿成功！，等待审核(问就是权限还没写好)]"
+                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
                     elif u_k and g_k:
                         easycyber_in_tg(cybernick,easycyber_package)
-                        groupid = json_get(config_in_global(),"admin_group")
-                        adminid = json_get(config_in_global(),"admin_pro")
-                        msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\物种:{species}\n年龄:{age}\n回复风格:{stytle}\n角色故事:{story}\n==========="
-                        await bot.call_api("send_group_msg",group_id=groupid, message=msg_tg)
-                        await bot.call_api("send_private_msg",user_id=adminid, messages=msg_tg)
-                        msg = "投稿成功！，等待审核(问就是权限还没写好)]"
-                    elif g_k:
+                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
+                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
+                    elif u_k:
                         easycyber_in_tg(cybernick,easycyber_package)
                         adminid = json_get(config_in_global(),"admin_pro")
-                        msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\物种:{species}\n年龄:{age}\n回复风格:{stytle}\n角色故事:{story}\n==========="
-                        await bot.call_api("send_private_msg",user_id=adminid, messages=msg_tg)
+                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
                     else:
                         easycyber_in_tg(cybernick,easycyber_package)
-                        groupid = json_get(config_in_global(),"admin_group")
-                        msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\n物种:{species}\n年龄:{age}\n回复风格:{stytle}\n角色故事:{story}\n==========="
-                        await bot.call_api("send_group_msg",group_id=groupid, message=msg_tg)
-                        msg = "投稿成功！，等待审核(问就是权限还没写好)]"
+                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
                     await send_msg(matcher,event,msg)
 
 
@@ -676,6 +678,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
         msg = f"未知命令“{text}”，已退出"
         await send_msg(matcher,event,msg)
 
+#cyber操作（投稿和载入和查看）
 @cyber_set.got(
     "msg",
     prompt=f"发送以下选项执行相应功能\n投稿 #投稿自定义预设(不允许同名)\n载入 #载入自定义预设(不允许不存在)\n查看列表 #列出所有公开的自定义预设\n退出 #退出设置\n发送非预期命令则退出",
@@ -692,8 +695,12 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                 s["last"] = True
                 msg = "cyber预设“Hx”不能删除或修改，如要改动请改源码"
                 await send_msg(matcher,event,msg)
+            elif text in cyber_in_tg(text,False) or text in cyber_in(text,False):
+                s["last"] = True
+                msg = "该预设角色名称已经存在，请不要重复使用该昵称."
+                await send_msg(matcher,event,msg)
             else:
-                s["cynickname"] = text
+                s["name"] = text
                 s["last"] = "system"
                 msg = "该角色的systempromote是？"
                 await send_msg_reject(matcher,event,msg)
@@ -721,7 +728,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                     msg = "非正确格式！请重新输入，如需退出请发送：退出"
                     await send_msg_reject(matcher,event,msg)
                 else:
-                    name = s["cfnickname"]
+                    name = s["name"]
                     systempromote = s["systempromote"]
                     easycyber_package["system"] = s["systempromote"]
                     easycyber_package["public"] = key[f"{text}"]
@@ -731,44 +738,29 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                     u = json_get(config_in_global(),"admin_pro")
                     g_k = json_get(config_in_global(),"admin_group_switch")
                     u_k = json_get(config_in_global(),"admin_user_switch")
-                    if not g and u:
+                    msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\nsystem:{systempromote}==========="
+                    msg = "投稿成功！，等待审核(问就是权限还没写好)]"
+                    if not g and not u:
                         logger.opt(colors=True).success(f"{g},{u}")
                         msg ="bot管理者未配置，超级管理员和bot控制台,审核失败！"
-                    elif u == None and g == None:
-                        logger.opt(colors=True).success("false")
-                        msg ="bot管理者未配置，超级管理员和bot控制台,审核失败！"
-                    elif u == None and g_k:
+                    elif not u and g:
                         cyber_in_tg(name,easycyber_package)
-                        groupid = json_get(config_in_global(),"admin_group")
-                        msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\nsystem:{systempromote}==========="
-                        await bot.call_api("send_group_msg",group_id=groupid, message=msg_tg)
-                        msg = "投稿成功！，等待审核(问就是权限还没写好)]"
-                    elif g == None and u_k:
+                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
+                    elif not g and u:
                         cyber_in_tg(name,easycyber_package)
-                        adminid = json_get(config_in_global(),"admin_pro")
-                        msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\nsystem:{systempromote}==========="
-                        await bot.call_api("send_private_msg",user_id=adminid, messages=msg_tg)
-                        msg = "投稿成功！，等待审核(问就是权限还没写好)]"
+                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
                     elif u_k and g_k:
                         cyber_in_tg(name,easycyber_package)
-                        groupid = json_get(config_in_global(),"admin_group")
-                        adminid = json_get(config_in_global(),"admin_pro")
-                        msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\nsystem:{systempromote}==========="
-                        await bot.call_api("send_group_msg",group_id=groupid, message=msg_tg)
-                        await bot.call_api("send_private_msg",user_id=adminid, messages=msg_tg)
-                        msg = "投稿成功！，等待审核(问就是权限还没写好)]"
-                    elif g_k:
+                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
+                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
+                    elif u_k:
                         cyber_in_tg(name,easycyber_package)
-                        adminid = json_get(config_in_global(),"admin_pro")
-                        msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\nsystem:{systempromote}==========="
-                        await bot.call_api("send_private_msg",user_id=adminid, messages=msg_tg)
+                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
                     else:
                         cyber_in_tg(name,easycyber_package)
-                        groupid = json_get(config_in_global(),"admin_group")
-                        msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\nsystem:{systempromote}==========="
-                        await bot.call_api("send_group_msg",group_id=groupid, message=msg_tg)
-                        msg = "投稿成功！，等待审核(问就是权限还没写好)]"
+                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
                     await send_msg(matcher,event,msg)
+
         if s["last"] == "载入":
             if text == "退出":
                 s["last"] = True
@@ -851,9 +843,10 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
         msg = f"未知命令“{text}”，已退出"
         await send_msg(matcher,event,msg)
 
+#所有投稿管理处理
 @admin_set.got(
     "msg",
-    prompt=f"发送以下选项执行相应功能\n通过 #通过投稿的自定义预设(不允许同名)\n拒绝 #拒绝投稿的自定义预设(不允许同名)\n查看 #查看投稿预设详情(不允许不存在)\n查看投稿列表 #列出所有投稿的自定义预设\n添加admin #添加bot管理者\n退出 #退出\n仅支持bot管理员使用！\n发送非预期命令则退出",
+    prompt=f"发送以下选项执行相应功能\n通过 #通过投稿的预设(不允许同名)\n拒绝 #拒绝投稿的自定义预设(不允许同名)\n查看 #查看投稿预设详情(不允许不存在)\n查看投稿列表 #列出所有投稿的自定义预设\n添加admin #添加bot管理者\n退出 #退出\n仅支持bot管理员使用！\n发送非预期命令则退出",
 )
 async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State):
     id = get_id(event)
@@ -863,7 +856,16 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State):
         if "last" not in s:
             s["last"] = ""
         if s["last"]:
-            if s["last"] == "通过1":
+            if s["last"] == "通过":
+                msg = "请输入要通过的预设名称，如果不知道建议先get下列表"
+                if text == "easycyber":
+                    s["last"] == "easyber"
+                    await send_msg_reject(matcher,event,msg)
+                elif text == "cyber":
+                    s["last"] == "cyber"
+                    await send_msg_reject(matcher,event,msg)
+
+            if s["last"] == "easyber":
                 json_1 = easycyber_in_tg(False,False)
                 json_data = json_get(json_1,text)
                 json_data["tg_admin"] = id
@@ -873,10 +875,32 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State):
                 with open(f'{log_dir}/file/easycyber_tg.json','w',encoding='utf-8') as file:
                     json.dump(json_1,file)
                     s["last"] = True
-                    msg = f"已通过投稿用户为{user}关于角色{text}的投稿"
+                    msg = f"[easycyber]已通过投稿用户为{user}关于角色{text}的投稿"
+                await send_msg(matcher,event,msg)
+
+            if s["last"] == "cyber":
+                json_1 = cyber_in_tg(False,False)
+                json_data = json_get(json_1,text)
+                json_data["tg_admin"] = id
+                user = json_data["creator"]
+                in_ok = cyber_in(text,json_data)
+                end_json = json_1.pop(f"{text}")
+                with open(f'{log_dir}/file/cyber_tg.json','w',encoding='utf-8') as file:
+                    json.dump(json_1,file)
+                    s["last"] = True
+                    msg = f"[cyber]已通过投稿用户为{user}关于角色{text}的投稿"
                 await send_msg(matcher,event,msg)
 
             if s["last"] == "拒绝":
+                msg = "请输入要拒绝的预设名称，如果不知道建议先get下列表"
+                if text == "easycyber":
+                    s["last"] == "badeasyber"
+                    await send_msg_reject(matcher,event,msg)
+                elif text == "cyber":
+                    s["last"] == "badcyber"
+                    await send_msg_reject(matcher,event,msg)
+            
+            if s["last"] == "badeasyber":
                 s["last"] = True
                 json_1 = easycyber_in_tg(False,False)
                 json_data = json_get(json_1,text)
@@ -887,10 +911,22 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State):
                     msg = f"已拒绝投稿用户为{user}关于角色{text}的投稿"
                 await send_msg(matcher,event,msg)
 
+            if s["last"] == "badcyber":
+                s["last"] = True
+                json_1 = cyber_in_tg(False,False)
+                json_data = json_get(json_1,text)
+                user = json_data["creator"]
+                end_json = json_1.pop(f"{text}")
+                with open(f'{log_dir}/file/cyber_tg.json','w',encoding='utf-8') as file:
+                    json.dump(json_1,file)
+                    msg = f"已拒绝投稿用户为{user}关于角色{text}的投稿"
+                await send_msg(matcher,event,msg)
+
         if text == "通过":
-            s["last"] = "通过1"
-            msg = "请输入要加入角色昵称"
+            s["last"] = "通过"
+            msg = "请输入要通过的预设类型\n例如：cyber或者easycyber"
             await send_msg_reject(matcher,event,msg)
+
 
         if text == "查看投稿列表":
             s["last"] = True
@@ -898,11 +934,19 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State):
             msg_list = []
             for key in list_in:
                 msg_list.append(format(key))
-            await send_msg(matcher,event,f"{msg_list}")
+            msg = f"[easycyber]投稿角色列表：\n"
+            msg += "\n".join(msg_list)
+            list_in = cyber_in_tg(False,False)
+            msg_list = []
+            for key in list_in:
+                msg_list.append(format(key))
+            msg += f"\n\n[cyber]投稿角色列表：\n"
+            msg += "\n".join(msg_list)
+            await send_msg(matcher,event,f"{msg}")
 
         if text == "拒绝":
             s["last"] = "拒绝"
-            msg = "请输入要离开角色昵称"
+            msg = "请输入要的预设类型\n例如：cyber或者easycyber"
             await send_msg_reject(matcher,event,msg)
 
         if s["last"]:
@@ -915,6 +959,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State):
         msg = f"你的权限为{place_user},权限不足，无法操作"
         await send_msg(matcher, event, msg)
 
+#订阅系统
 @chat_ne.got(
     "msg",
     prompt=f"发送以下选项执行相应功能\n加入 #银影将会主动来找你聊天》？\n退出 #呜呜呜，真的要赶银影走吗\n查看加入列表 #字如其意(仅限管理员使用)\n发送非预期命令则退出",
@@ -1011,7 +1056,8 @@ async def _(matcher: Matcher,event: MessageEvent, s: T_State):
         msg = f"未知命令“{text}”，已退出"
         await send_msg(matcher,event,msg)
 
+#测试函数
 @ces.handle()
-async def _(event: MessageEvent,msg: Message = CommandArg()):
+async def _(event: MessageEvent):
     id = get_id(event)
     await get_id()

@@ -238,7 +238,7 @@ def json_get(json,key) -> str:
         back = False
     return back
 
-def json_get_text(json,key) -> str:
+async def json_get_text(json,key) -> str:
     try:
         back = json[f"{key}"]
     except Exception as e:
@@ -862,7 +862,7 @@ def config_in_user(id,nick) -> str:
     return back
 
 #获取配置内键值并列表化
-def config_list(config):
+async def config_list(config):
     try:
         tf_key = []
         w_key = []

@@ -1,5 +1,5 @@
 from io import BytesIO
-import os
+import traceback,requests,zipfile,sys,os
 from PIL import Image,ImageFilter
 from .chat import(
     file_get,
@@ -8,19 +8,40 @@ from .chat import(
 )
 from nonebot import get_plugin_config
 from nonebot_plugin_htmlrender import template_to_pic
-from pathlib import Path
 from loguru import logger
-import traceback
-import sys
+from tqdm import tqdm
 from nonebot.message import run_postprocessor
 from nonebot.adapters.onebot.v11 import (
    Bot,  MessageEvent ,MessageSegment
 )
 from .config import Config
+file = path_in()
+def get_file():
+    url = "https://skin.huanxinbot.com/api/lzy.php?url=https://wwp.lanzoup.com/iGH5K1wrn1wh&type=down"
+    file_get = requests.get(url=url,stream=True)
+    total = int(file_get.headers.get('Content-Length',0))
+    with open(f"{file}/error.zip","wb") as f,tqdm(desc="error.zip",total=total,unit="iB",unit_scale=True,unit_divisor=1024,) as bar: 
+        for data in file_get.iter_content(chunk_size=1024): 
+            size = f.write(data)
+            bar.update(len(data))
+    if os.path.exists(f"{file}/error.zip"):
+        logger.success("[Hx]尝试下载补全文件成功")
+        with zipfile.ZipFile(f"{file}/error.zip", 'r') as zip_ref:
+            zip_ref.extractall(f"{file}/file/error_report")
+            logger.success("[Hx]尝试补全成功")
+            logger.success("已加载错误报告模块")
+        os.remove(f"{file}/error.zip")
+    else:
+        logger.error("尝试下载失败！")
+
+if os.path.exists(f"{file}/file/error_report/hx_error.html"):
+    logger.success("已加载错误报告模块")
+else:
+    logger.error("未找到错误报告模块的文件，尝试下载。。。")
+    get_file()
 
 ##由星佑的oops修改而来
-file = path_in()
-image_dir = str(Path(__file__).parent / "error_report")
+image_dir = str(f"{file}/error_report")
 hx_config = get_plugin_config(Config)
 
 #背景图片尝试模糊处理（下一步更新）
@@ -61,7 +82,7 @@ async def crash_oops(err_values:Exception = None):
         error_values=err_values
         newline_char = '<br>'
         data = f'{newline_char.join(err_values.args)}'
-    template_path = str(Path(__file__).parent / "error_report") #同文件夹下面的
+    template_path = str(f"{file}/error_report")
     htmlimage = await template_to_pic(
                 template_path=template_path,
                 template_name="hx_error.html",
@@ -80,4 +101,3 @@ async def post_run(bot: Bot, event: MessageEvent, e: Exception) -> None:
         await bot.call_api("send_group_msg",group_id=id,message=MessageSegment.image(img))
     except:
         raise BotRunTimeError("遇到未知错误,请自行扒拉日志!")
-    logger.info(f"[Hx]:报错处理：{e}")
