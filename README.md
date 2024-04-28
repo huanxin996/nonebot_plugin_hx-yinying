@@ -166,6 +166,36 @@ OneBot:
 - 说明：这里是超级管理员（插件）
 - 重要：必填（你需要这个来管理该插件）
 
+### image_check_appid
+- 类型：`str`
+- 默认值：`None`
+- 说明：这里是阿里云图像检查的appid
+- 重要：非必填
+
+### image_check_token
+- 类型：`str`
+- 默认值：`None`
+- 说明：这里是阿里云图像检查的token
+- 重要：非必填
+
+### smms_token
+- 类型：`str`
+- 默认值：`None`
+- 说明：这里是smms的token（图床）
+- 重要：非必填（可在填写smms_username和smms_password）后通过bot窗口获取。
+
+### smms_username
+- 类型：`str`
+- 默认值：`None`
+- 说明：这里是smms的账号id（图床）
+- 重要：非必填必填（若smm_token为空，则需要填写账号密码）
+
+### smms_password
+- 类型：`str`
+- 默认值：`None`
+- 说明：这里是smms的密码（图床）
+- 重要：非必填（若smm_token为空，则需要填写账号密码）
+
 </details>
 <br>
 
@@ -175,8 +205,36 @@ OneBot:
 yinying_appid=你的appid
 yinying_token=你的token(不带bearer)
 hx_path=C:\Users\user\Desktop
+SUPERUSERS=["114514"]
+image_check_appid=你的appid
+image_check_token=你的token
+smms_token=你获取到的token
+smms_username=114514
+smms_password=114514
 ```
 
+## 本地各类config详解
+
+<details>
+<summary><b style="font-size: 1.3rem">config_global.json</b></summary>
+
+在写了在写了
+</details>
+<br>
+
+<details>
+<summary><b style="font-size: 1.3rem">config_group.json</b></summary>
+
+在写了在写了
+</details>
+<br>
+
+<details>
+<summary><b style="font-size: 1.3rem">config_user.json</b></summary>
+
+在写了在写了
+</details>
+<br>
 
 ## Contributors ✨
 

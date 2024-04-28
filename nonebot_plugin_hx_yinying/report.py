@@ -28,7 +28,7 @@ def get_file():
     if os.path.exists(f"{file}/error.zip"):
         logger.success("[Hx]尝试下载补全文件成功")
         with zipfile.ZipFile(f"{file}/error.zip", 'r') as zip_ref:
-            zip_ref.extractall(f"{file}/file/error_report")
+            zip_ref.extractall(f"{file}/file")
             logger.success("[Hx]尝试补全成功")
             logger.success("已加载错误报告模块")
         os.remove(f"{file}/error.zip")
