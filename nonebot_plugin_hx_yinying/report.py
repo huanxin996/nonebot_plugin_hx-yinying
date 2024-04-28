@@ -18,7 +18,7 @@ from nonebot.adapters.onebot.v11 import (
 from .config import Config
 file = path_in()
 def get_file():
-    url = "https://skin.huanxinbot.com/api/lzy.php?url=https://wwp.lanzoup.com/iGH5K1wrn1wh&type=down"
+    url = "https://skin.huanxinbot.com/api/lzy.php?url=https://wwp.lanzoup.com/i1TJF1wvd6aj&type=down"
     file_get = requests.get(url=url,stream=True)
     total = int(file_get.headers.get('Content-Length',0))
     with open(f"{file}/error.zip","wb") as f,tqdm(desc="error.zip",total=total,unit="iB",unit_scale=True,unit_divisor=1024,) as bar: 
@@ -83,7 +83,7 @@ async def crash_oops(err_values:Exception = None):
         error_values=err_values
         newline_char = '<br>'
         data = f'{newline_char.join(err_values.args)}'
-    template_path = str(f"{file}/error_report")
+    template_path = str(f"{file}/file/error_report")
     htmlimage = await template_to_pic(
                 template_path=template_path,
                 template_name="hx_error.html",

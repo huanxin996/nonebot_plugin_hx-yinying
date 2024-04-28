@@ -16,6 +16,7 @@ from nonebot.log import logger
 from nonebot.matcher import Matcher
 from nonebot.rule import to_me,Rule
 import json,os,random
+from .image_check import image_check
 from .config import Config
 from .chat import *
 from .report import post_run
@@ -1059,5 +1060,4 @@ async def _(matcher: Matcher,event: MessageEvent, s: T_State):
 #测试函数
 @ces.handle()
 async def _(event: MessageEvent):
-    id = get_id(event)
     await get_id()

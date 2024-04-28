@@ -1,22 +1,21 @@
 # -*- coding: utf-8 -*-
 # 引入依赖包
 # pip install alibabacloud_imageaudit20191230
-import os
-import io
+import io,json
 from nonebot import get_plugin_config
+from nonebot.log import logger
 from urllib.request import urlopen
 from alibabacloud_imageaudit20191230.client import Client
 from alibabacloud_imageaudit20191230.models import ScanImageAdvanceRequestTask, ScanImageAdvanceRequest
-from alibabacloud_tea_openapi.models import Config
 from alibabacloud_tea_util.models import RuntimeOptions
-from .config import Config
+from .smms import SMMS
+from .config import Config as config_hx
+from alibabacloud_tea_openapi.models import Config
 
-hx_config = get_plugin_config(Config)
+
+hx_config = get_plugin_config(config_hx)
 
 config = Config(
-  # 创建AccessKey ID和AccessKey Secret，请参考https://help.aliyun.com/document_detail/175144.html
-  # 如果您用的是RAM用户的AccessKey，还需要为RAM用户授予权限AliyunVIAPIFullAccess，请参考https://help.aliyun.com/document_detail/145025.html
-  # 从环境变量读取配置的AccessKey ID和AccessKey Secret。运行代码示例前必须先配置环境变量。
   access_key_id=hx_config.image_check_appid,
   access_key_secret=hx_config.image_check_token,
   endpoint='imageaudit.cn-shanghai.aliyuncs.com',
@@ -24,29 +23,45 @@ config = Config(
 )
 
 async def image_upload(url:str)->str:
-    img = urlopen(url).read()
-    task = ScanImageAdvanceRequestTask()
-    task.image_urlobject=io.BytesIO(img)
-    #等更新
+    smms = SMMS()
+    img0 = urlopen(url).read()
+    img=io.BytesIO(img0)
+    file = await smms.upload(img)
+    if file:
+        logger.debug(f"[Hx]图片上传成功，图床链接为:{file}")
+        return file
+    else:
+        logger.error("[Hx]图片上传失败")
+        return False
 
 async def image_check(url:str)->str:
-    runtime_option = RuntimeOptions()
-    img = urlopen(url).read()
-    task = ScanImageAdvanceRequestTask()
-    task.image_urlobject=io.BytesIO(img)
-    scan_image_request = ScanImageAdvanceRequest(
-    task=[
-        task
-    ],
-    scene=[
-        'logo',
-        'porn'
-    ]
-    )
-    try:
-        client = Client(config)
-        response = client.scan_image_advance(scan_image_request, runtime_option)
-        print(response.body)
-    except Exception as error:
-        print(error)
-        print(error.code)
+    img0 = await image_upload(url)
+    if hx_config.image_check_appid == None or hx_config.image_check_token == None:
+        logger.warning("[Hx]未配置图像检测，若因图像违规导致被封开发者id，插件开发者概不负责！！！")
+        return img0
+    if img0:
+        logger.debug("[Hx]尝试检查图片【爱来自阿里】")
+        runtime_option = RuntimeOptions()
+        img = urlopen(url).read()
+        task1 = ScanImageAdvanceRequestTask()
+        task1.image_urlobject=io.BytesIO(img)
+        scan_image_request = ScanImageAdvanceRequest(
+        task=[task1],
+        scene=['porn']
+        )
+        try:
+            client = Client(config)
+            response = client.scan_image_advance(scan_image_request, runtime_option)
+            logger.debug(response.body)
+            back = response.body.to_map()
+            msg0 = back["Data"]["Results"][0]["SubResults"][0]["Rate"]
+            if msg0 >= 0.6:
+                logger.warning(f"[Hx]图片违规，请重新上传")
+                msg = False
+            else:
+                msg = img0
+            return msg
+        except Exception as e:
+            return False
+    else:
+        return False
