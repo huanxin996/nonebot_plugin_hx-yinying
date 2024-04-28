@@ -52,10 +52,9 @@ async def image_check(url:str)->str:
         try:
             client = Client(config)
             response = client.scan_image_advance(scan_image_request, runtime_option)
-            logger.debug(response.body)
             back = response.body.to_map()
             msg0 = back["Data"]["Results"][0]["SubResults"][0]["Rate"]
-            if msg0 >= 0.6:
+            if msg0 <= 0.6:
                 logger.warning(f"[Hx]图片违规，请重新上传")
                 msg = False
             else:

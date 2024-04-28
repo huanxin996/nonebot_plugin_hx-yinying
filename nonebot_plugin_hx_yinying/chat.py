@@ -12,6 +12,7 @@ require("nonebot_plugin_localstore")
 import nonebot_plugin_localstore as store
 from .image_check import image_check
 
+
 hx_config = get_plugin_config(Config)
 
 #判断主要配置文件夹是否存在！
@@ -1514,21 +1515,13 @@ async def get_answer_at(matcher, event, bot):
             await send_msg(matcher,event,msg)
     elif img != []:
         in_img = await image_check(img[0])
-        try:
-            back_msg = str(await yinying(groupid,id,text,nick,in_img))
-            msg = back_msg.replace("/n","\n")
-            await send_msg(matcher,event,msg)
-        except Exception as e:
-            back_msg = f"请求接口报错！\n返回结果：{e}"
-            await send_msg(matcher, event, back_msg)
+        back_msg = str(await yinying(groupid,id,text,nick,in_img))
+        msg = back_msg.replace("/n","\n")
+        await send_msg(matcher,event,msg)
     else:
-        try:
-            back_msg = str(await yinying(groupid,id,text,nick))
-            msg = back_msg.replace("/n","\n")
-            await send_msg(matcher,event,msg)
-        except Exception as e:
-            back_msg = f"请求接口报错！\n返回结果：{e}"
-            await send_msg(matcher, event, back_msg)
+        back_msg = str(await yinying(groupid,id,text,nick,False))
+        msg = back_msg.replace("/n","\n")
+        await send_msg(matcher,event,msg)
 
 #获取回复（指令触发）
 async def get_answer_ml(matcher, event ,bot ,msg):
@@ -1538,23 +1531,15 @@ async def get_answer_ml(matcher, event ,bot ,msg):
     id = get_id(event)
     nick = await get_nick(bot,event)
     user_in(id,json_replace(text))
-    if not text == "" or text == None:
-        try:
-            back_msg = str(await yinying(groupid,id,text,nick))
-            msg = back_msg.replace("/n","\n")
-            await send_msg(matcher,event,msg)
-        except Exception as e:
-            back_msg = f"请求接口报错！\n返回结果：{e}"
-            await send_msg(matcher, event, back_msg)
-    elif img == "" or img == []:
+    if  text == "" or text == None and img == []:
         msg = "诶唔，你叫我是有什么事嘛？"
         await send_msg(matcher,event,msg)
-    else:
+    elif img != []:
         in_img = await image_check(img[0])
-        try:
-            back_msg = str(await yinying(groupid,id,text,nick,in_img))
-            msg = back_msg.replace("/n","\n")
-            await send_msg(matcher,event,msg)
-        except Exception as e:
-            back_msg = f"请求接口报错！\n返回结果：{e}"
-            await send_msg(matcher, event, back_msg)
+        back_msg = str(await yinying(groupid,id,text,nick,in_img))
+        msg = back_msg.replace("/n","\n")
+        await send_msg(matcher,event,msg)
+    else:
+        back_msg = str(await yinying(groupid,id,text,nick,False))
+        msg = back_msg.replace("/n","\n")
+        await send_msg(matcher,event,msg)
