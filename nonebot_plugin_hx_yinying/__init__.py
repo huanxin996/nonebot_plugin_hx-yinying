@@ -433,9 +433,9 @@ async def handoff(matcher: Matcher, bot: Bot, event: MessageEvent,events: Event,
                 config_group[f"{groupid}"] = group_config
                 with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
                     json.dump(config_group,file)
-                    clear_id(id,nick)
-                    msg =f"切换成功（当前模型已切换为{model})"
-                    await send_msg(matcher,event,msg)
+                clear_id(id,nick)
+                msg =f"切换成功（当前模型已切换为{model})"
+                await send_msg(matcher,event,msg)
         else:
             id = get_id(event)
             nick = get_nick(bot,event)
@@ -445,13 +445,13 @@ async def handoff(matcher: Matcher, bot: Bot, event: MessageEvent,events: Event,
                 msg =f"(当前模型已经是{model}了)不需要重复切换哦"
                 await send_msg(matcher,event,msg)
             else:
-                user_config['private_model'] = f"{model}"
+                user_config['private_model'] = model
                 config_user[f"{id}"] = user_config
                 with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
                     json.dump(config_user,file)
-                    clear_id(id,nick)
-                    msg =f"切换成功（当前模型已切换为{model})"
-                    await send_msg(matcher,event,msg)
+                clear_id(id,nick)
+                msg =f"切换成功（当前模型已切换为{model})"
+                await send_msg(matcher,event,msg)
     else:
         msg = "请注意，切换模型后不能为空哦"
         await send_msg(matcher,event,msg)

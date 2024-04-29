@@ -72,7 +72,7 @@ class BotRunTimeError(Exception):
     """bot runtime error"""
     
 #崩溃返回图片化
-async def crash_oops(err_values:Exception = None):
+async def crash_oops(err_values:Exception):
     if err_values == None:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         data = traceback.format_exc()
