@@ -224,7 +224,7 @@ async def at(matcher: Matcher, event: MessageEvent, bot: Bot):
             await bot.call_api("send_group_msg",group_id=groupid,message=MessageSegment.image(img))
         else:
             img = await error_oops()
-            await bot.call_api("send_private_msg",id=id,message=MessageSegment.image(img))
+            await bot.call_api("send_private_msg",user_id=id,message=MessageSegment.image(img))
 
 #指令对话
 @msg_ml.handle()
@@ -238,7 +238,7 @@ async def ml(matcher: Matcher, event: MessageEvent, bot: Bot, msg: Message = Com
             await bot.call_api("send_group_msg",group_id=groupid,message=MessageSegment.image(img))
         else:
             img = await error_oops()
-            await bot.call_api("send_private_msg",id=id,message=MessageSegment.image(img))
+            await bot.call_api("send_private_msg",user_id=id,message=MessageSegment.image(img))
 
 #刷新对话
 @clear.handle()

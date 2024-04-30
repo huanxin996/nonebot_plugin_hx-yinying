@@ -1432,7 +1432,7 @@ async def data_in(groupid,id,text,nick0,img) -> str:
             await nonebot.get_bot().call_api("send_group_msg",group_id=groupid,message=MessageSegment.image(img))
         else:
             img = await error_oops()
-            await nonebot.get_bot().call_api("send_private_msg",id=id,message=MessageSegment.image(img))
+            await nonebot.get_bot().call_api("send_private_msg",user_id=id,message=MessageSegment.image(img))
             logger.error("严重错误，构建data失败！")
             packages_data = False
     return  packages_data
@@ -1462,19 +1462,21 @@ async def get_chat(id):
         'Authorization': f'Bearer {hx_config.yinying_token}'
     }
     osu = await data_in(None,id,text,nick)
+    if not osu:
+        raise RuntimeError("[Hx]:初始化data失败，终止api调用进程！")
     async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=60, write=20, pool=30)) as client:
             back = await client.post("https://api-yinying-ng.wingmark.cn/v1/chatWithCyberFurry", headers=headers, json=osu)
     try:
             back = back.json()
     except json.decoder.JSONDecodeError as e:
             img = await error_oops()
-            await nonebot.get_bot().call_api("send_private_msg",id=id,message=MessageSegment.image(img))
+            await nonebot.get_bot().call_api("send_private_msg",user_id=id,message=MessageSegment.image(img))
     try:
         msg = back['choices'][0]['message']['content']
         await nonebot.get_bot().call_api("send_private_msg",user_id=id, message=msg)
     except Exception as e:
         img = await error_oops()
-        await nonebot.get_bot().call_api("send_private_msg",id=id,message=MessageSegment.image(img))
+        await nonebot.get_bot().call_api("send_private_msg",user_id=id,message=MessageSegment.image(img))
 
 #主要构建
 async def yinying(groupid,id,text,nick,in_img):
@@ -1483,6 +1485,8 @@ async def yinying(groupid,id,text,nick,in_img):
         'Authorization': f'Bearer {hx_config.yinying_token}'
     }
     osu = await data_in(groupid,id,text,nick,in_img)
+    if not osu:
+        raise RuntimeError("[Hx]:初始化data失败，终止api调用进程！")
     async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=60, write=20, pool=30)) as client:
             back_1 = await client.post("https://api-yinying-ng.wingmark.cn/v1/chatWithCyberFurry", headers=headers, json=osu)
     try:
@@ -1508,7 +1512,7 @@ async def yinying(groupid,id,text,nick,in_img):
             await nonebot.get_bot().call_api("send_group_msg",group_id=groupid,message=MessageSegment.image(img))
         else:
             img = await error_oops()
-            await nonebot.get_bot().call_api("send_private_msg",id=id,message=MessageSegment.image(img))
+            await nonebot.get_bot().call_api("send_private_msg",user_id=id,message=MessageSegment.image(img))
     return back_msg
 
 #获取回复（被艾特）

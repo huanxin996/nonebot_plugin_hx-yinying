@@ -133,9 +133,9 @@ async def post_run(bot: Bot, event: MessageEvent, e: Exception) -> None:
     try:
         groupid = get_groupid(event)
         id = event.user_id
-        if groupid:    
+        if groupid:
             await bot.call_api("send_group_msg",group_id=id,message=MessageSegment.image(img))
         else:
-            await bot.call_api("send_private_msg",id=id,message=MessageSegment.image(img))
+            await bot.call_api("send_private_msg",user_id=id,message=MessageSegment.image(img))
     except:
         raise BotRunTimeError("遇到未知错误,请自行扒拉日志!")

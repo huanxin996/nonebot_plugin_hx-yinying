@@ -6,7 +6,7 @@ from pydantic import BaseModel,AnyHttpUrl,Field
 
 class Config(BaseModel):
     # 插件版本号勿动！！！！
-    hx_version: Optional[str] = "1.1.7"
+    hx_version: Optional[str] = "1.1.8"
     # 秩乱v你的appid
     yinying_appid: Optional[str] = None
     # 秩乱给你的token
