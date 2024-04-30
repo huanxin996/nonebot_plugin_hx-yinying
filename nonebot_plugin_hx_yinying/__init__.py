@@ -19,7 +19,7 @@ import json,os,random
 from .image_check import image_check
 from .config import Config
 from .chat import *
-from .report import post_run
+from .report import error_oops
 
 __plugin_meta__ = PluginMetadata(
     name="Hx_YinYing",
@@ -215,12 +215,30 @@ async def verision_get(matcher: Matcher, event: MessageEvent):
 #@对话
 @msg_at.handle()
 async def at(matcher: Matcher, event: MessageEvent, bot: Bot):
-    await get_answer_at(matcher, event, bot)
+    groupid = get_groupid(event)
+    try:
+        await get_answer_at(matcher, event, bot)
+    except Exception as e:
+        if groupid:
+            img = await error_oops()
+            await bot.call_api("send_group_msg",group_id=groupid,message=MessageSegment.image(img))
+        else:
+            img = await error_oops()
+            await bot.call_api("send_private_msg",id=id,message=MessageSegment.image(img))
 
 #指令对话
 @msg_ml.handle()
 async def ml(matcher: Matcher, event: MessageEvent, bot: Bot, msg: Message = CommandArg()):
-    await get_answer_ml(matcher, event, bot ,msg)
+    groupid = get_groupid(event)
+    try:
+        await get_answer_ml(matcher, event, bot ,msg)
+    except Exception as e:
+        if groupid:
+            img = await error_oops()
+            await bot.call_api("send_group_msg",group_id=groupid,message=MessageSegment.image(img))
+        else:
+            img = await error_oops()
+            await bot.call_api("send_private_msg",id=id,message=MessageSegment.image(img))
 
 #刷新对话
 @clear.handle()
@@ -1059,5 +1077,10 @@ async def _(matcher: Matcher,event: MessageEvent, s: T_State):
 
 #测试函数
 @ces.handle()
-async def _(event: MessageEvent):
-    await get_id()
+async def _(event: MessageEvent,bot:Bot):
+    try:
+        await get_id()
+    except Exception as e:
+       img = await error_oops()
+       id = event.group_id
+       await bot.call_api("send_group_msg",group_id=id,message=MessageSegment.image(img))

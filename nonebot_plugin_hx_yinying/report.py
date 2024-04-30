@@ -1,22 +1,58 @@
 from io import BytesIO
 import traceback,requests,zipfile,sys,os
 from PIL import Image,ImageFilter
-from .chat import(
-    file_get,
-    path_in,
-    create_dir_usr,
-)
+from pathlib import Path
 from nonebot import get_plugin_config,require
 require("nonebot_plugin_htmlrender")
 from nonebot_plugin_htmlrender import template_to_pic
+require("nonebot_plugin_localstore")
+import nonebot_plugin_localstore as store
 from loguru import logger
 from tqdm import tqdm
 from nonebot.message import run_postprocessor
 from nonebot.adapters.onebot.v11 import (
-   Bot,  MessageEvent ,MessageSegment
+   Bot,  MessageEvent ,MessageSegment,GroupMessageEvent
 )
 from .config import Config
-file = path_in()
+
+##由星佑的oops修改而来
+hx_config = get_plugin_config(Config)
+
+if hx_config.hx_path == None:
+    history_dir = store.get_data_dir("Hx_YingYing")
+    file = Path(f"{history_dir}/yinying_chat").absolute()
+    file.mkdir(parents=True, exist_ok=True)
+else:
+    history_dir = store.get_data_dir(f"{hx_config.hx_path}")
+    file = Path(f"{history_dir}/yinying_chat").absolute()
+    file.mkdir(parents=True, exist_ok=True)
+
+
+image_dir = str(f"{file}/error_report")
+
+def create_dir_usr(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+def file_get(fil1e) -> str:
+    try:
+        if os.path.exists(f"{file}/file/{fil1e}"):
+            back = f"{file}/file/{fil1e}"
+        else:
+            back = False
+    except Exception as e:
+        back = False
+    return back
+
+#获取群聊id
+def get_groupid(event) -> int:
+    """获取群聊id"""
+    if isinstance(event, GroupMessageEvent):
+            groupid = f"{event.group_id}"
+    else:
+        groupid = None
+    return groupid
+
 def get_file():
     url = "https://skin.huanxinbot.com/api/lzy.php?url=https://wwp.lanzoup.com/i1TJF1wvd6aj&type=down"
     file_get = requests.get(url=url,stream=True)
@@ -41,9 +77,6 @@ else:
     logger.error("未找到错误报告模块的文件，尝试下载。。。")
     get_file()
 
-##由星佑的oops修改而来
-image_dir = str(f"{file}/error_report")
-hx_config = get_plugin_config(Config)
 
 #背景图片尝试模糊处理（下一步更新）
 async def pictures_bj(file, radius)-> BytesIO:
@@ -72,7 +105,7 @@ class BotRunTimeError(Exception):
     """bot runtime error"""
     
 #崩溃返回图片化
-async def crash_oops(err_values:Exception):
+async def error_oops(err_values:Exception = None):
     if err_values == None:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         data = traceback.format_exc()
@@ -96,9 +129,13 @@ async def crash_oops(err_values:Exception):
 
 @run_postprocessor
 async def post_run(bot: Bot, event: MessageEvent, e: Exception) -> None:
-    img = await crash_oops(e)
+    img = await error_oops(e)
     try:
-        id = event.group_id
-        await bot.call_api("send_group_msg",group_id=id,message=MessageSegment.image(img))
+        groupid = get_groupid(event)
+        id = event.user_id
+        if groupid:    
+            await bot.call_api("send_group_msg",group_id=id,message=MessageSegment.image(img))
+        else:
+            await bot.call_api("send_private_msg",id=id,message=MessageSegment.image(img))
     except:
         raise BotRunTimeError("遇到未知错误,请自行扒拉日志!")
