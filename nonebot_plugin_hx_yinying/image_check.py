@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # 引入依赖包
 # pip install alibabacloud_imageaudit20191230
-import io,requests,cv2
+import io,requests
 from nonebot import get_plugin_config
 from nonebot.log import logger
 from urllib.request import urlopen

@@ -54,11 +54,8 @@ def get_groupid(event) -> int:
     return groupid
 
 def get_file():
-    url = "https://api.7585.net.cn/lanzou/api.php?url=https://wwp.lanzoup.com/i1TJF1wvd6aj&type=down"
+    url = "http://api.wer.plus/api/lanz?url=https://wwp.lanzoup.com/i1TJF1wvd6aj&t=1"
     try:
-        json_r = requests.get(url=url,timeout=5)
-        reply = json_r.json()
-        url = reply["downUrl"]
         file_get = requests.get(url=url,stream=True)
         total = int(file_get.headers.get('Content-Length',0))
         with open(f"{file}/error.zip","wb") as f,tqdm(desc="error.zip",total=total,unit="iB",unit_scale=True,unit_divisor=1024,) as bar: 

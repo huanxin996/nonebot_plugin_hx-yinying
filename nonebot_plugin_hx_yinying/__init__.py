@@ -15,8 +15,7 @@ from nonebot.typing import T_State
 from nonebot.log import logger
 from nonebot.matcher import Matcher
 from nonebot.rule import to_me,Rule
-import json,os,random
-from .image_check import image_check
+import json,random
 from .config import Config
 from .chat import *
 from .report import error_oops
@@ -40,29 +39,25 @@ global_config = config_in_global()
 dy_list = json_get(config_in_global(),"dy_list")
 log_dir = path_in()
    
-#检查更新
-new_verision, time = update_hx()
-
-if not new_verision and not time:
-    logger.error(f"[Hx_YinYing]:无法获取最新的版本，当前版本为{hx_config.hx_version}，可能已经过时！")
-else:
-    if new_verision <= hx_config.hx_version:
-        logger.success(f"[Hx_YinYing]:你的Hx_YinYing已经是最新版本了！当前版本为{hx_config.hx_version},仓库版本为{new_verision}")
-    else:
-        if os.path.exists(f"{log_dir}/config/config_glob21.json"):
-            logger.success("121")
-        else:
-            logger.success("[Hx_YinYing]:检查到Hx_YinYing有新版本！")
-            logger.warning("【Hx】正在自动更新中--未找到虚拟环境【安装在本地环境！】")
-            os.system(f'pip install nonebot-plugin-hx-yinying=={new_verision} -i https://pypi.Python.org/simple/')
-            logger.success(f"[Hx_YinYing]:更新完成！最新版本为{new_verision}|当前使用版本为{hx_config.hx_version}")
-            logger.warning(f"[Hx_YinYing]:你可能需要重新启动nonebot来完成插件的重载")
-
 #检查关键配置
-if hx_config.yinying_appid == None or hx_config.yinying_token == None:
-    logger.opt(colors=True).error("未设置核心配置？！,请检查你配置里的yinying_appid和yinying_token")
+if not hx_config.yinying_appid or not hx_config.yinying_token:
+    logger.error("未设置核心配置？！,请检查你配置里的yinying_appid和yinying_token")
 else:
     logger.opt(colors=True).success("【Hx】加载核心配置成功")
+
+
+#检测更新
+try:
+    check_update()
+except Exception as e:
+    logger.opt(colors=True).error("【Hx】检测更新失败！！，联系开发者！错误捕获{e}")
+
+#尝试自动更新-0.2day
+try:
+    scheduler.add_job(func=check_update,trigger='interval',hours=3,id="huanxin996")
+    logger.opt(colors=True).success(f"【Hx】定时检测更新启动。")
+except Exception as e:
+    logger.opt(colors=True).error(f"【Hx】定时检测更新启动失败！！，联系开发者！错误捕获{e}")
 
 #根据订阅信息注册定时任务
 try:
@@ -74,27 +69,11 @@ try:
         config_minute = json_get_time(user_config,"dy_minute")
         scheduler.add_job(func=get_chat,trigger='interval',args=[key] ,hours=config_time, minutes=config_minute, id=key)
     logger.opt(colors=True).success(f"【Hx】定时任务加载成功,当前共加载{extent}个订阅用户")
-    logger.opt(colors=True).success( f"""
-    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
-<fg #60F5F5>,--,                                                                                                 </fg #60F5F5>                 
-<r>      ,--.'|                                       ,--,     ,--,                                 ,---,.               ___   </r> 
-<y>   ,--,  | :                                       |'. \   / .`|  ,--,                         ,'  .'  \            ,--.'|_   </y>
-<g>,---.'|  : '         ,--,                    ,---, ; \ `\ /' / ;,--.'|         ,---,         ,---.' .' |   ,---.    |  | :,' </g> 
-<c>|   | : _' |       ,'_ /|                ,-+-. /  |`. \  /  / .'|  |,      ,-+-. /  |        |   |  |: |  '   ,'\   :  : ' :  </c>
-<e>:   : |.'  |  .--. |  | :    ,--.--.    ,--.'|'   | \  \/  / ./ `--'_     ,--.'|'   |        :   :  :  / /   /   |.;__,'  /   </e>
-<m>|   ' '  ; :,'_ /| :  . |   /       \  |   |  ,"' |  \  \.'  /  ,' ,'|   |   |  ,"' |        :   |    ; .   ; ,. :|  |   |    </m>
-<e>'   |  .'. ||  ' | |  . .  .--.  .-. | |   | /  | |   \  ;  ;   '  | |   |   | /  | |        |   :     \'   | |: ::__,'| :    </e>
-<c>|   | :  | '|  | ' |  | |   \__\/: . . |   | |  | |  / \  \  \  |  | :   |   | |  | |        |   |   . |'   | .; :  '  : |__  </c>
-<g>'   : |  : ;:  | : ;  ; |   ," .--.; | |   | |  |/  ;  /\  \  \ '  : |__ |   | |  |/         '   :  '; ||   :    |  |  | '.'| </g>
-<y>|   | '  ,/ '  :  `--'   \ /  /  ,.  | |   | |--' ./__;  \  ;  \|  | '.'||   | |--'          |   |  | ;  \   \  /   ;  :    ; </y>
-<r>;   : ;--'  :  ,      .-./;  :   .'   \|   |/     |   : / \  \  ;  :    ;|   |/              |   :   /    `----'    |  ,   /  </r>
-<m>|   ,/       `--`----'    |  ,     .-./'---'      ;   |/   \  ' |  ,   / '---'               |   | ,'                ---`-'   </m>
-<r>'---'                      `--`---'               `---'     `--` ---`-'                      `----'</r>
-    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
-""")
 except Exception as e:
-    logger.opt(colors=True).error(f"【Hx】:错误捕获{e}，联系开发者！")
-    logger.opt(colors=True).error("【Hx】定时任务加载失败！！，联系开发者！")
+    logger.opt(colors=True).error(f"【Hx】定时任务加载失败！！，联系开发者！错误捕获{e}")
+
+
+
 
 #主要命令列表
 msg_at = on_message(rule=Rule(chek_rule_base)&to_me(), priority=10,  block=True)
@@ -495,7 +474,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                 s["last"] = True
                 msg = "已退出"
                 await send_msg(matcher,event,msg)
-            elif text in easycyber_in_tg(text,False) or text in easycyber_in(text,False):
+            elif text in easycyber_in_tg(text,False) or text in easycyber_in(text,False) or not text:
                 s["last"] = "增加"
                 msg = "该预设角色名称已经存在，请不要重复使用该昵称，请重新输入，如需退出请发送退出"
                 await send_msg_reject(matcher,event,msg)
@@ -757,7 +736,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                     u = json_get(config_in_global(),"admin_pro")
                     g_k = json_get(config_in_global(),"admin_group_switch")
                     u_k = json_get(config_in_global(),"admin_user_switch")
-                    msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\nsystem:{systempromote}==========="
+                    msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\nsystem:{systempromote}\n\n==========="
                     msg = "投稿成功！，等待审核(问就是权限还没写好)]"
                     if not g and not u:
                         logger.opt(colors=True).success(f"{g},{u}")

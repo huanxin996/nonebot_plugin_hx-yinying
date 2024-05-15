@@ -2,7 +2,7 @@
 from io import BytesIO
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 from pydantic import ValidationError
 import requests
 from nonebot import get_driver,get_plugin_config
