@@ -1,5 +1,5 @@
 # -- coding: utf-8 --**
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent ,MessageSegment ,Message,MessageEvent,Event
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent ,MessageSegment ,Message,MessageEvent,Event,PrivateMessageEvent
 from html import unescape
 from typing import List
 import os,httpx, json, time, requests,platform
@@ -191,7 +191,6 @@ async def get_img_urls(event: MessageEvent):
     )
     return urls
 
-
 #创建用户文件夹
 def create_dir_usr(path):
     if not os.path.exists(path):
@@ -219,7 +218,6 @@ def json_get_time(json,key) -> str:
     except Exception as e:
         back = 1
     return back
-
 
 #json转义防止爆炸（）
 def json_replace(text) -> str:
@@ -276,7 +274,7 @@ def check_update():
             venv = os.getcwd()
             if os.path.exists(f"{venv}/.venv"):
                 logger.success("【Hx】正在自动更新中--找到虚拟环境![开始安装]")
-                os.system(f'f"{venv}/.venv/Scripts/python.exe" -m pip install nonebot-plugin-hx-yinying=={new_verision} -i https://pypi.Python.org/simple/')
+                os.system(f'"{venv}/.venv/Scripts/python.exe" -m pip install nonebot-plugin-hx-yinying=={new_verision} -i https://pypi.Python.org/simple/')
                 logger.success(f"[Hx_YinYing]:更新完成！最新版本为{new_verision}|当前使用版本为{hx_config.hx_version}")
                 logger.warning(f"[Hx_YinYing]:你可能需要重新启动nonebot来完成插件的重载")
             else:
@@ -866,19 +864,21 @@ async def chek_rule_base(event:MessageEvent,eve:Event):
         black_user = json_get(config, "blacklist_user")
         rule_mode = json_get(config, "rule_model")
         at_reply = json_get(config, "at_reply", default=False)
-        private = json_get(config, "private", default=False)
+        private = json_get(config, "private", default=True)
         def check_user_group_rules(to_me):
             is_admin = id in admin_list or id == admin_pro or id in superuser
             is_white = group_id in white_group or id in white_user
-            is_black = group_id in black_group or id in black_user
-            is_at_reply = at_reply if isinstance(eve, GroupMessageEvent) else True and to_me
-            return is_admin or is_white or (is_black and not is_at_reply)
+            is_black = group_id not in black_group or id not in black_user
+            is_private = private if isinstance(eve, GroupMessageEvent) else True
+            if to_me and isinstance(eve, GroupMessageEvent):
+                return at_reply
+            return is_admin or is_white or (is_private and is_black)
         if isinstance(eve, GroupMessageEvent):
             to_me = event.to_me
-            if rule_mode == "black":
-                return check_user_group_rules(to_me)
-            elif rule_mode == "white":
+            if rule_mode == "white":
                 return check_user_group_rules(to_me) or group_id in white_group
+            else:
+                return check_user_group_rules(to_me)
         elif not isinstance(eve, GroupMessageEvent) and not private:
             return False
         else:

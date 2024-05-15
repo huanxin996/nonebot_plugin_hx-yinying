@@ -89,7 +89,34 @@ admin_set = on_command("控制台操作", aliases={"管理控制台","setstart"}
 verision = on_command("确认版本", aliases={"旅行伙伴确认","版本确认"},rule=Rule(chek_rule_base),  priority=0, block=True)
 character = on_command("sd", aliases={"旅行伙伴加入","设定加入"},rule=Rule(chek_rule_base),  priority=0, block=True)
 chat_ne = on_command("加入订阅", aliases={"旅行伙伴觉醒","订阅加入"},rule=Rule(chek_rule_base),  priority=0, block=True)
+time_noend = on_command("切换时间线", aliases={"切换模式"},rule=Rule(chek_rule_base),  priority=0, block=True)
 ces = on_command("测试服务", aliases={"测试报错"},rule=Rule(chek_rule_base), priority=0, block=True)
+
+#生命模式-无限时间(仅供cyber和easycyber使用)
+@time_noend.got(
+    "msg",
+    prompt=f"请输入时间线\n当前仅支持\n无限-overworld\n普通-nether\n请输入全称：无限-overworld",
+)
+async def time_noend(matcher: Matcher,bot:Bot, event: MessageEvent):
+    text = unescape(event.get_plaintext().strip())
+    config_1 = config_in_user(get_id(event),False)
+    user_config = json_get(config_1,get_id(event))
+    lines = user_config.get("model_endless",False)
+    if text == "无限-overworld" and lines != True:
+        user_config["model_endless"] = True
+        with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
+            json.dump(config_1,file)
+        msg = ".载入成功"
+    elif text == "普通-nether" and lines != False:
+        user_config["model_endless"] = True
+        with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
+            json.dump(config_1,file)
+        msg = "..载入成功"
+    else:
+        msg = "时间线重叠..."
+    await send_msg(matcher,event,msg)
+
+
 
 #自定义自己的设定
 @character.handle()
