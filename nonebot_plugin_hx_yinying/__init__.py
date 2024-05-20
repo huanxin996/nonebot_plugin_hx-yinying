@@ -77,7 +77,7 @@ except Exception as e:
 
 #主要命令列表
 msg_at = on_message(rule=Rule(chek_rule_base)&to_me(), priority=10,  block=True)
-msg_ml = on_command("hx", aliases={"chat","yinying","yy"},rule=Rule(chek_rule_base),  priority=10, block=True)
+msg_ml = on_command("yinying_chat", aliases=hx_config.hx_chatcommand,rule=Rule(chek_rule_base),  priority=15, block=True)
 clear =  on_command("刷新对话", aliases={"clear"},rule=Rule(chek_rule_base),  priority=0, block=True)
 history_get = on_command("导出对话", aliases={"getchat"},rule=Rule(chek_rule_base),  priority=0, block=True)
 set_global_config = on_command("设置全局配置", aliases={"设置配置全局","globalset"},rule=Rule(chek_rule_admin),  priority=0, block=True)
@@ -90,6 +90,7 @@ verision = on_command("确认版本", aliases={"旅行伙伴确认","版本确�
 character = on_command("sd", aliases={"旅行伙伴加入","设定加入"},rule=Rule(chek_rule_base),  priority=0, block=True)
 chat_ne = on_command("加入订阅", aliases={"旅行伙伴觉醒","订阅加入"},rule=Rule(chek_rule_base),  priority=0, block=True)
 time_noend = on_command("切换时间线", aliases={"切换模式"},rule=Rule(chek_rule_base),  priority=0, block=True)
+gloubalblack_add = on_command("全局拉黑", aliases={"银影不要理"},rule=Rule(chek_rule_admin),  priority=0, block=True)
 ces = on_command("测试服务", aliases={"测试报错"},rule=Rule(chek_rule_base), priority=0, block=True)
 
 #生命模式-无限时间(仅供cyber和easycyber使用)
@@ -116,6 +117,33 @@ async def time_noend(matcher: Matcher,bot:Bot, event: MessageEvent):
         msg = "时间线重叠..."
     await send_msg(matcher,event,msg)
 
+#拉黑用户、
+@gloubalblack_add.handle()
+async def gloubalblack_add(matcher: Matcher,bot:Bot,event: MessageEvent, msg: Message = CommandArg()):
+    text = msg.extract_plain_text()
+    groupid = event.group_id
+    config_1 = config_in_global()
+    user_config = json_get(config_1,"blacklist_user")
+    if not text:
+        id = await extract_member_at(groupid,msg,bot)
+        for num in id:
+            if num in user_config:
+                logger.warning(f"{num}已在黑名单内")
+            else:
+                user_config.append(num)
+        config_1["blacklist_user"] = user_config
+        with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
+            json.dump(config_1,file)
+        msg= f"{id}\n拉黑成功"
+    else:
+        if text in user_config:
+            await send_msg(matcher, event, "该用户已在黑名单内")
+        user_config.append(text)
+        config_1["blacklist_user"] = user_config
+        with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
+            json.dump(config_1,file)
+            msg= f"{text}拉黑成功"
+    await send_msg(matcher, event, msg)
 
 
 #自定义自己的设定
@@ -489,6 +517,10 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
     id = get_id(event)
     text = unescape(event.get_plaintext().strip())
     easycyber_package = {}
+    if text == "退出":
+        s["last"] = True
+        msg = "已退出"
+        await send_msg(matcher,event,msg) 
     if "last" not in s:
         s["last"] = ""
     if s["last"]:
@@ -496,10 +528,6 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
             if text == "Hx" or text == "HX" or text == "幻歆":
                 s["last"] = True
                 msg = "easycyber预设“Hx”不能删除或修改，如要改动请改源码"
-                await send_msg(matcher,event,msg)
-            elif text == "退出":
-                s["last"] = True
-                msg = "已退出"
                 await send_msg(matcher,event,msg)
             elif text in easycyber_in_tg(text,False) or text in easycyber_in(text,False) or not text:
                 s["last"] = "增加"
@@ -511,166 +539,136 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                 msg = "请输入角色物种"
                 await send_msg_reject(matcher,event,msg)
         if s["last"] == "cfSpecies":
-            if text == "退出":
-                s["last"] = True
-                msg = "已退出"
-                await send_msg(matcher,event,msg)
-            else:
-                s["cfSpecies"] = text
-                s["last"] = "cfconage"
-                msg = "请输入角色表现:(比如\n child--[幼年]\n young--[青年]\n adult--[成年]\nps:只输入--前面的英文即可"
-                await send_msg_reject(matcher,event,msg)
+            s["cfSpecies"] = text
+            s["last"] = "cfconage"
+            msg = "请输入角色表现:(比如\n child--[幼年]\n young--[青年]\n adult--[成年]\nps:只输入--前面的英文即可"
+            await send_msg_reject(matcher,event,msg)
 
         if s["last"] == "cfconage":
-            if text == "退出":
-                s["last"] = True
-                msg = "已退出"
-                await send_msg(matcher,event,msg)
+            key = ['child','young','adult']
+            if not text in key:
+                s["last"] = "cfconage"
+                msg = "未找到该类型的角色聊天年龄!请重新输入，如需退出请发送：退出"
+                await send_msg_reject(matcher,event,msg)
             else:
-                key = ['child','young','adult']
-                if not text in key:
-                    s["last"] = "cfconage"
-                    msg = "未找到该类型的角色聊天年龄!请重新输入，如需退出请发送：退出"
-                    await send_msg_reject(matcher,event,msg)
-                else:
-                    s["cfconage"] = text
-                    s["last"] = "cfconstyle"
-                    msg = "请输入角色聊天风格:(比如\n vivid--[活泼]\n sentiment--[富有情感(共情大师？)]\n assistant--[助理]\n chilly--[冷酷无情]\n social_anxiety--[社恐]\nps:只输入--前面的英文即可"
-                    await send_msg_reject(matcher,event,msg)
-
-        if s["last"] == "cfconstyle":
-            if text == "退出":
-                s["last"] = True
-                msg = "已退出"
-                await send_msg(matcher,event,msg)
-            else:
-                key = ['vivid','sentiment','assistant','chilly','social_anxiety']
-                if not text in key:
-                    s["last"] = "cfconstyle"
-                    msg = "未找到该类型的角色聊天风格！请重新输入，如需退出请发送：退出"
-                    await send_msg_reject(matcher,event,msg)
-                else:
-                    s["cfconstyle"] = json_replace(text)
-                    s["last"] = "cfstory"
-                    msg = "请输入角色的背景故事（这对他真的很重要\n[胡言乱语：我要给他完整的一生！！！]"
-                    await send_msg_reject(matcher,event,msg)
-
-        if s["last"] == "cfstory":
-            if text == "退出":
-                s["last"] = True
-                msg = "已退出"
-                await send_msg(matcher,event,msg)
-            else:
-                s["cfstory"] = text
-                s["last"] = "public"
-                msg = "该角色是否公开？(最后一步)完成将发送到bot管理站进行审核，审核通过后即可使用,请发送是或否或者公开或不公开"
+                s["cfconage"] = text
+                s["last"] = "cfconstyle"
+                msg = "请输入角色聊天风格:(比如\n vivid--[活泼]\n sentiment--[富有情感(共情大师？)]\n assistant--[助理]\n chilly--[冷酷无情]\n social_anxiety--[社恐]\nps:只输入--前面的英文即可"
                 await send_msg_reject(matcher,event,msg)
 
-        if s["last"] == "public":
-            if text == "退出":
-                s["last"] = True
-                msg = "已退出"
-                await send_msg(matcher,event,msg)
+        if s["last"] == "cfconstyle":
+            key = ['vivid','sentiment','assistant','chilly','social_anxiety']
+            if not text in key:
+                s["last"] = "cfconstyle"
+                msg = "未找到该类型的角色聊天风格！请重新输入，如需退出请发送：退出"
+                await send_msg_reject(matcher,event,msg)
             else:
-                key = {"是":True,"否":False,"公开":True,"不公开":False}
-                if not text in key:
-                    s["last"] = "public"
-                    msg = "非正确格式！请重新输入，如需退出请发送：退出"
-                    await send_msg_reject(matcher,event,msg)
+                s["cfconstyle"] = json_replace(text)
+                s["last"] = "cfstory"
+                msg = "请输入角色的背景故事（这对他真的很重要\n[胡言乱语：我要给他完整的一生！！！]"
+                await send_msg_reject(matcher,event,msg)
+
+        if s["last"] == "cfstory":
+            s["cfstory"] = text
+            s["last"] = "public"
+            msg = "该角色是否公开？(最后一步)完成将发送到bot管理站进行审核，审核通过后即可使用,请发送是或否或者公开或不公开"
+            await send_msg_reject(matcher,event,msg)
+
+        if s["last"] == "public":
+            key = {"是":True,"否":False,"公开":True,"不公开":False}
+            if not text in key:
+                s["last"] = "public"
+                msg = "非正确格式！请重新输入，如需退出请发送：退出"
+                await send_msg_reject(matcher,event,msg)
+            else:
+                name = s["cfnickname"]
+                species = s["cfSpecies"]
+                age = s["cfconage"]
+                stytle = s["cfconstyle"]
+                story = s["cfstory"]
+                easycyber_package["cfNickname"] = s["cfnickname"]
+                easycyber_package["cfSpecies"] = s["cfSpecies"]
+                easycyber_package["cfConAge"] = s["cfconage"]
+                easycyber_package["cfConStyle"] = s["cfconstyle"]
+                easycyber_package["cfStory"] = s["cfstory"]
+                easycyber_package["public"] = key[f"{text}"]
+                easycyber_package["creator"] = int(id)
+                s["last"] = True
+                cybernick = s["cfnickname"]
+                g = json_get(config_in_global(),"admin_group")
+                u = json_get(config_in_global(),"admin_pro")
+                g_k = json_get(config_in_global(),"admin_group_switch")
+                u_k = json_get(config_in_global(),"admin_user_switch")
+                msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\n物种:{species}\n年龄:{age}\n回复风格:{stytle}\n角色故事:{story}\n==========="
+                msg = "投稿成功！，等待审核(问就是权限还没写好)]"
+                if not g and not u:
+                    msg ="bot管理者未配置，超级管理员和bot控制台,审核失败！"
+                elif not u and g:
+                    easycyber_in_tg(cybernick,easycyber_package)
+                    await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
+                elif not g and u:
+                    easycyber_in_tg(cybernick,easycyber_package)
+                    await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
+                elif u_k and g_k:
+                    easycyber_in_tg(cybernick,easycyber_package)
+                    await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
+                    await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
+                elif u_k:
+                    easycyber_in_tg(cybernick,easycyber_package)
+                    adminid = json_get(config_in_global(),"admin_pro")
+                    await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
                 else:
-                    name = s["cfnickname"]
-                    species = s["cfSpecies"]
-                    age = s["cfconage"]
-                    stytle = s["cfconstyle"]
-                    story = s["cfstory"]
-                    easycyber_package["cfNickname"] = s["cfnickname"]
-                    easycyber_package["cfSpecies"] = s["cfSpecies"]
-                    easycyber_package["cfConAge"] = s["cfconage"]
-                    easycyber_package["cfConStyle"] = s["cfconstyle"]
-                    easycyber_package["cfStory"] = s["cfstory"]
-                    easycyber_package["public"] = key[f"{text}"]
-                    easycyber_package["creator"] = int(id)
-                    s["last"] = True
-                    cybernick = s["cfnickname"]
-                    g = json_get(config_in_global(),"admin_group")
-                    u = json_get(config_in_global(),"admin_pro")
-                    g_k = json_get(config_in_global(),"admin_group_switch")
-                    u_k = json_get(config_in_global(),"admin_user_switch")
-                    msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\n物种:{species}\n年龄:{age}\n回复风格:{stytle}\n角色故事:{story}\n==========="
-                    msg = "投稿成功！，等待审核(问就是权限还没写好)]"
-                    if not g and not u:
-                        msg ="bot管理者未配置，超级管理员和bot控制台,审核失败！"
-                    elif not u and g:
-                        easycyber_in_tg(cybernick,easycyber_package)
-                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
-                    elif not g and u:
-                        easycyber_in_tg(cybernick,easycyber_package)
-                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
-                    elif u_k and g_k:
-                        easycyber_in_tg(cybernick,easycyber_package)
-                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
-                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
-                    elif u_k:
-                        easycyber_in_tg(cybernick,easycyber_package)
-                        adminid = json_get(config_in_global(),"admin_pro")
-                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
-                    else:
-                        easycyber_in_tg(cybernick,easycyber_package)
-                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
-                    await send_msg(matcher,event,msg)
+                    easycyber_in_tg(cybernick,easycyber_package)
+                    await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
+                await send_msg(matcher,event,msg)
 
 
         if s["last"] == "载入":
-            if text == "退出":
-                s["last"] = True
-                msg = "已退出"
-                await send_msg(matcher,event,msg)
-            else:
-                s["last"] = True
-                if isinstance(events, GroupMessageEvent):
-                    groupid = get_groupid(event)
-                    config = config_in_group(groupid)
-                    config_group = json_get(config,groupid)
-                    promte = json_get(easycyber_in(False,False),f"{text}")
-                    public = json_get(promte,"public")
-                    if not public:
-                        msg = f"{text}模型拒绝被加载(可能是模型不存在或者模型非公开！)"      
-                    else:
-                        if config_group["easycharacter_in"] == text:
-                            msg = f"{text}模型已加载，请勿重新加载"  
-                        else:
-                            config_group["easycharacter_in"] = f"{text}"
-                            config[f"{groupid}"] = config_group
-                            with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
-                                json.dump(config,file)
-                                msg = f"{text}加载成功！" 
+            s["last"] = True
+            if isinstance(events, GroupMessageEvent):
+                groupid = get_groupid(event)
+                config = config_in_group(groupid)
+                config_group = json_get(config,groupid)
+                promte = json_get(easycyber_in(False,False),f"{text}")
+                public = json_get(promte,"public")
+                if not public:
+                    msg = f"{text}模型拒绝被加载(可能是模型不存在或者模型非公开！)"      
                 else:
-                    config_user = config_in_user(id,False)
-                    user = json_get(config_user,f"{id}")
-                    promte = json_get(easycyber_in(False,False),f"{text}")
-                    public = json_get(promte,"public")
-                    creator = json_get(promte,"creator")
-                    if creator == id:
-                        if user["easycharacter_in"]== text:
-                            msg = f"{text}模型已加载，请勿重新加载"  
-                        else:
-                            user["easycharacter_in"] = f"{text}"
-                            config_user[f"{id}"] = user
-                            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
-                                json.dump(config_user,file)
-                                msg = f"{text}加载成功！"
-                    elif not public:
-                        msg = f"{text}模型拒绝被加载(可能是模型不存在或者模型非公开！)"      
+                    if config_group["easycharacter_in"] == text:
+                        msg = f"{text}模型已加载，请勿重新加载"  
                     else:
-                        if user["easycharacter_in"] == text:
-                            msg = f"{text}模型已加载，请勿重新加载"  
-                        else:
-                            user["easycharacter_in"] = f"{text}"
-                            config_user[f"{id}"] = user
-                            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
-                                json.dump(config_user,file)
-                                msg = f"{text}加载成功！" 
-                await send_msg(matcher,event,msg)
+                        config_group["easycharacter_in"] = f"{text}"
+                        config[f"{groupid}"] = config_group
+                        with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
+                            json.dump(config,file)
+                            msg = f"{text}加载成功！" 
+            else:
+                config_user = config_in_user(id,False)
+                user = json_get(config_user,f"{id}")
+                promte = json_get(easycyber_in(False,False),f"{text}")
+                public = json_get(promte,"public")
+                creator = json_get(promte,"creator")
+                if creator == id:
+                    if user["easycharacter_in"]== text:
+                        msg = f"{text}模型已加载，请勿重新加载"  
+                    else:
+                        user["easycharacter_in"] = f"{text}"
+                        config_user[f"{id}"] = user
+                        with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
+                            json.dump(config_user,file)
+                            msg = f"{text}加载成功！"
+                elif not public:
+                    msg = f"{text}模型拒绝被加载(可能是模型不存在或者模型非公开！)"      
+                else:
+                    if user["easycharacter_in"] == text:
+                        msg = f"{text}模型已加载，请勿重新加载"  
+                    else:
+                        user["easycharacter_in"] = f"{text}"
+                        config_user[f"{id}"] = user
+                        with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
+                            json.dump(config_user,file)
+                            msg = f"{text}加载成功！" 
+            await send_msg(matcher,event,msg)
     # 增加预设
     if text == "投稿":
         s["last"] = "增加"
@@ -712,6 +710,10 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
     id = get_id(event)
     text = unescape(event.get_plaintext().strip())
     easycyber_package = {}
+    if text == "退出":
+        s["last"] = True
+        msg = "已退出"
+        await send_msg(matcher,event,msg)  
     if "last" not in s:
         s["last"] = ""
     if s["last"]:
@@ -731,112 +733,97 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                 await send_msg_reject(matcher,event,msg)
 
         if s["last"] == "system":
-            if text == "退出":
-                s["last"] = True
-                msg = "已退出"
-                await send_msg(matcher,event,msg)
-            else:
-                s["systempromote"] = text
-                s["last"] = "public"
-                msg = "该角色是否公开u\n请发送公开或不公开（也可以是是或否或者True或False）"
-                await send_msg_reject(matcher,event,msg)
+            s["systempromote"] = text
+            s["last"] = "public"
+            msg = "该角色是否公开u\n请发送公开或不公开（也可以是是或否或者True或False）"
+            await send_msg_reject(matcher,event,msg)
 
         if s["last"] == "public":
-            if text == "退出":
-                s["last"] = True
-                msg = "已退出"
-                await send_msg(matcher,event,msg)
+            key = {"是":True,"否":False,"公开":True,"不公开":False}
+            if not text in key:
+                s["last"] = "public"
+                msg = "非正确格式！请重新输入，如需退出请发送：退出"
+                await send_msg_reject(matcher,event,msg)
             else:
-                key = {"是":True,"否":False,"公开":True,"不公开":False}
-                if not text in key:
-                    s["last"] = "public"
-                    msg = "非正确格式！请重新输入，如需退出请发送：退出"
-                    await send_msg_reject(matcher,event,msg)
+                name = s["name"]
+                systempromote = s["systempromote"]
+                easycyber_package["system"] = s["systempromote"]
+                easycyber_package["public"] = key[f"{text}"]
+                easycyber_package["creator"] = int(id)
+                s["last"] = True
+                g = json_get(config_in_global(),"admin_group")
+                u = json_get(config_in_global(),"admin_pro")
+                g_k = json_get(config_in_global(),"admin_group_switch")
+                u_k = json_get(config_in_global(),"admin_user_switch")
+                msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\nsystem:{systempromote}\n\n==========="
+                msg = "投稿成功！，等待审核(问就是权限还没写好)]"
+                if not g and not u:
+                    logger.opt(colors=True).success(f"{g},{u}")
+                    msg ="bot管理者未配置，超级管理员和bot控制台,审核失败！"
+                elif not u and g:
+                    cyber_in_tg(name,easycyber_package)
+                    await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
+                elif not g and u:
+                    cyber_in_tg(name,easycyber_package)
+                    await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
+                elif u_k and g_k:
+                    cyber_in_tg(name,easycyber_package)
+                    await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
+                    await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
+                elif u_k:
+                    cyber_in_tg(name,easycyber_package)
+                    await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
                 else:
-                    name = s["name"]
-                    systempromote = s["systempromote"]
-                    easycyber_package["system"] = s["systempromote"]
-                    easycyber_package["public"] = key[f"{text}"]
-                    easycyber_package["creator"] = int(id)
-                    s["last"] = True
-                    g = json_get(config_in_global(),"admin_group")
-                    u = json_get(config_in_global(),"admin_pro")
-                    g_k = json_get(config_in_global(),"admin_group_switch")
-                    u_k = json_get(config_in_global(),"admin_user_switch")
-                    msg_tg = f"新投稿！\n来源于QQ[{id}]\n以下为设定内容\n===========\n昵称:{name}\nsystem:{systempromote}\n\n==========="
-                    msg = "投稿成功！，等待审核(问就是权限还没写好)]"
-                    if not g and not u:
-                        logger.opt(colors=True).success(f"{g},{u}")
-                        msg ="bot管理者未配置，超级管理员和bot控制台,审核失败！"
-                    elif not u and g:
-                        cyber_in_tg(name,easycyber_package)
-                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
-                    elif not g and u:
-                        cyber_in_tg(name,easycyber_package)
-                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
-                    elif u_k and g_k:
-                        cyber_in_tg(name,easycyber_package)
-                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
-                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
-                    elif u_k:
-                        cyber_in_tg(name,easycyber_package)
-                        await bot.call_api("send_private_msg",user_id=u, message=msg_tg)
-                    else:
-                        cyber_in_tg(name,easycyber_package)
-                        await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
-                    await send_msg(matcher,event,msg)
+                    cyber_in_tg(name,easycyber_package)
+                    await bot.call_api("send_group_msg",group_id=g, message=msg_tg)
+                await send_msg(matcher,event,msg)
 
         if s["last"] == "载入":
-            if text == "退出":
-                s["last"] = True
-                msg = "已退出"
-                await send_msg(matcher,event,msg)
-            else:
-                s["last"] = True
-                if isinstance(events, GroupMessageEvent):
-                    groupid = get_groupid(event)
-                    config = config_in_group(groupid)
-                    config_group = json_get(config,groupid)
-                    promte = json_get(cyber_in(False,False),f"{text}")
-                    public = json_get(promte,"public")
-                    if not public:
-                        msg = f"{text}模型拒绝被加载(可能是模型不存在或者模型非公开！)"      
-                    else:
-                        if config_group["character_in"] == text:
-                            msg = f"{text}模型已加载，请勿重新加载"  
-                        else:
-                            config_group["character_in"] = f"{text}"
-                            config[f"{groupid}"] = config_group
-                            with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
-                                json.dump(config,file)
-                                msg = f"{text}加载成功！" 
+            s["last"] = True
+            if isinstance(events, GroupMessageEvent):
+                groupid = get_groupid(event)
+                config = config_in_group(groupid)
+                config_group = json_get(config,groupid)
+                promte = json_get(cyber_in(False,False),f"{text}")
+                public = json_get(promte,"public")
+                if not public:
+                    msg = f"{text}模型拒绝被加载(可能是模型不存在或者模型非公开！)"      
                 else:
-                    config_user = config_in_user(id,False)
-                    user = json_get(config_user,f"{id}")
-                    promte = json_get(cyber_in(False,False),f"{text}")
-                    public = json_get(promte,"public")
-                    creator = json_get(promte,"creator")
-                    if creator == id:
-                        if user["character_in"]== text:
-                            msg = f"{text}模型已加载，请勿重新加载"  
-                        else:
-                            user["character_in"] = f"{text}"
-                            config_user[f"{id}"] = user
-                            with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
-                                json.dump(config_user,file)
-                                msg = f"{text}加载成功！"
-                    elif not public:
-                        msg = f"{text}模型拒绝被加载(可能是模型不存在或者模型非公开！)"      
+                    if config_group["character_in"] == text:
+                        msg = f"{text}模型已加载，请勿重新加载"  
                     else:
-                        if user["character_in"] == text:
-                            msg = f"{text}模型已加载，请勿重新加载"  
-                        else:
-                            user["character_in"] = f"{text}"
-                            config_user[f"{id}"] = user
-                            with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
-                                json.dump(config_user,file)
-                                msg = f"{text}加载成功！" 
-                await send_msg(matcher,event,msg)
+                        config_group["character_in"] = f"{text}"
+                        config[f"{groupid}"] = config_group
+                        with open(f'{log_dir}/config/config_group.json','w',encoding='utf-8') as file:
+                            json.dump(config,file)
+                            msg = f"{text}加载成功！" 
+            else:
+                config_user = config_in_user(id,False)
+                user = json_get(config_user,f"{id}")
+                promte = json_get(cyber_in(False,False),f"{text}")
+                public = json_get(promte,"public")
+                creator = json_get(promte,"creator")
+                if creator == id:
+                    if user["character_in"]== text:
+                        msg = f"{text}模型已加载，请勿重新加载"  
+                    else:
+                        user["character_in"] = f"{text}"
+                        config_user[f"{id}"] = user
+                        with open(f'{log_dir}/config/config_user.json','w',encoding='utf-8') as file:
+                            json.dump(config_user,file)
+                            msg = f"{text}加载成功！"
+                elif not public:
+                    msg = f"{text}模型拒绝被加载(可能是模型不存在或者模型非公开！)"      
+                else:
+                    if user["character_in"] == text:
+                        msg = f"{text}模型已加载，请勿重新加载"  
+                    else:
+                        user["character_in"] = f"{text}"
+                        config_user[f"{id}"] = user
+                        with open(f'{log_dir}\config\config_user.json','w',encoding='utf-8') as file:
+                            json.dump(config_user,file)
+                            msg = f"{text}加载成功！" 
+            await send_msg(matcher,event,msg)
     # 增加预设
     if text == "投稿":
         s["last"] = "增加"

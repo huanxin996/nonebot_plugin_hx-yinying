@@ -1,6 +1,4 @@
-from io import BytesIO
 import traceback,requests,zipfile,sys,os
-from PIL import Image,ImageFilter
 from pathlib import Path
 from nonebot import get_plugin_config,require
 require("nonebot_plugin_htmlrender")
@@ -9,7 +7,7 @@ require("nonebot_plugin_localstore")
 import nonebot_plugin_localstore as store
 from loguru import logger
 from tqdm import tqdm
-from nonebot.message import run_postprocessor
+from nonebot.message import run_postprocessor as hxerror
 from nonebot.adapters.onebot.v11 import (
    Bot,  MessageEvent ,MessageSegment,GroupMessageEvent
 )
@@ -26,32 +24,6 @@ else:
     history_dir = store.get_data_dir(f"{hx_config.hx_path}")
     file = Path(f"{history_dir}/yinying_chat").absolute()
     file.mkdir(parents=True, exist_ok=True)
-
-
-image_dir = str(f"{file}/error_report")
-
-def create_dir_usr(path):
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-def file_get(fil1e) -> str:
-    try:
-        if os.path.exists(f"{file}/file/{fil1e}"):
-            back = f"{file}/file/{fil1e}"
-        else:
-            back = False
-    except Exception as e:
-        back = False
-    return back
-
-#获取群聊id
-def get_groupid(event) -> int:
-    """获取群聊id"""
-    if isinstance(event, GroupMessageEvent):
-            groupid = f"{event.group_id}"
-    else:
-        groupid = None
-    return groupid
 
 def get_file():
     url = "http://api.wer.plus/api/lanz?url=https://wwp.lanzoup.com/i1TJF1wvd6aj&t=1"
@@ -81,29 +53,6 @@ else:
     get_file()
 
 
-#背景图片尝试模糊处理（下一步更新）
-async def pictures_bj(file, radius)-> BytesIO:
-    if not file:
-        return False
-    else:
-        try:
-            img_data = file_get(file)
-            image = Image.open(img_data)
-            if not isinstance(radius, int) or radius < 0:
-                raise ValueError("radius必须是非负整数")
-            blur_radius = int(radius)
-            blur_image = image.filter(ImageFilter.GaussianBlur(blur_radius))
-            if os.path.exists(f"{image_dir}/file/image"):
-                blur_image.save(f"{image_dir}/file/image/bg_mohu.png",format="png")
-                return True
-            else:
-                create_dir_usr(f"{image_dir}/file/image")
-                blur_image.save(f"{image_dir}/file/image/bg_mohu.png",format="png")
-                return True
-        except Exception as e:
-            print(f"处理图像时发生错误: {str(e)}")
-            return False
-
 class BotRunTimeError(Exception):
     """bot runtime error"""
     
@@ -127,17 +76,20 @@ async def error_oops(err_values:Exception = None):
                     "verision":hx_config.hx_version,
                     "error":error_values,
                     "data": data,
-                })
+                },
+                type="jpeg",
+                quality=50)
     return htmlimage
 
-@run_postprocessor
+@hxerror
 async def post_run(bot: Bot, event: MessageEvent, e: Exception) -> None:
     img = await error_oops(e)
     try:
-        groupid = get_groupid(event)
+        groupid = event.group_id
         id = event.user_id
         if groupid:
-            await bot.call_api("send_group_msg",group_id=id,message=MessageSegment.image(img))
+            logger.debug(f"[Hx]群聊{groupid}发生错误,正在发送错误报告")
+            await bot.call_api("send_group_msg",group_id=groupid,message=MessageSegment.image(img))
         else:
             await bot.call_api("send_private_msg",user_id=id,message=MessageSegment.image(img))
     except:

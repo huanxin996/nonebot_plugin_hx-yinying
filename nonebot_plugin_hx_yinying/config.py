@@ -1,14 +1,16 @@
 __author__ = "HuanXin"
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Set
 import nonebot
 from pydantic import BaseModel,AnyHttpUrl,Field
 
 
 class Config(BaseModel):
     # 插件版本号勿动！！！！
-    hx_version: Optional[str] = "1.3.0"
+    hx_version: Optional[str] = "1.3.11"
     # 秩乱v你的appid
     yinying_appid: Optional[str] = None
+    #自定义命令头，默认为hx chat
+    hx_chatcommand: Optional[Set[str]] = ["hx","chat"]
     # 秩乱给你的token
     yinying_token: Optional[str] = None
     # 插件数据文件存储路径，可不填。

@@ -1,7 +1,7 @@
 # -- coding: utf-8 --**
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent ,MessageSegment ,Message,MessageEvent,Event,PrivateMessageEvent
 from html import unescape
-from typing import List
+from typing import List,Set
 import os,httpx, json, time, requests,platform
 from loguru import logger as lg
 from .config import Config
@@ -139,6 +139,29 @@ def update_hx():
         else:
             break
     return verision,time
+
+#获取艾特的id
+async def extract_member_at(
+    group_id: int, message: Message, bot: Bot = None
+) -> Set[str]:
+    """提取消息中被艾特人的QQ号
+    参数:
+        message: 消息对象
+    返回:
+        被艾特集合
+    """
+    qq_list = (
+        await bot.get_group_member_list(group_id=group_id) if bot is not None else None
+    )
+    result = {
+        segment.data["qq"]
+        for segment in message
+        if segment.type == "at" and "qq" in segment.data
+    }
+    if "all" in result and qq_list is not None:
+        result.remove("all")
+        result |= {str(member["user_id"]) for member in qq_list}
+    return result
 
 #获取用户id
 def get_id(event) -> int:
@@ -360,8 +383,7 @@ def easycyber_in(cybernick,json_1) -> str:
 
 #载入本地投稿的easycyber预设(载入失败会被清空
 def easycyber_in_tg(cybernick,json_1) -> str:
-    dt = time.time()
-    t = int(dt)
+    t = time.time()
     try:
         if os.path.exists(f"{log_dir}/file/easycyber_tg.json"):
             with open(f'{log_dir}/file/easycyber_tg.json','r',encoding='utf-8') as file:
@@ -413,6 +435,8 @@ def easycyber_in_tg(cybernick,json_1) -> str:
                 logger.warning(f"报错捕获{e}")
                 create_dir_usr(f"{log_dir}/file")
                 with open(f'{log_dir}/file/easycyber_tg.json','w',encoding='utf-8') as file:
+                    dt = time.time()
+                    t = int(dt)
                     global_easycyberfurry = {}
                     packages_easycyberfurry = json_1
                     packages_easycyberfurry["create_time"] = t
@@ -492,8 +516,7 @@ def cyber_in(cybernick,json_1) -> str:
 
 #载入本地投稿的cyber预设(载入失败会被清空
 def cyber_in_tg(cybernick,json_1) -> str:
-    dt = time.time()
-    t = int(dt)
+    t = time.time()
     try:
         if os.path.exists(f"{log_dir}/file/cyber_tg.json"):
             with open(f'{log_dir}/file/cyber_tg.json','r',encoding='utf-8') as file:
@@ -522,7 +545,7 @@ def cyber_in_tg(cybernick,json_1) -> str:
                 json.dump(global_easycyberfurry,file)
                 back = global_easycyberfurry
     except Exception as e:
-            if json_1 == False and cybernick == False:
+            if json_1 == False or cybernick == False:
                 easycyber_package = {}
                 global_easycyberfurry = {}
                 easycyber_package["systempromote"] = "你是一个个的"
@@ -873,9 +896,12 @@ async def chek_rule_base(event:MessageEvent,eve:Event):
             is_white = group_id in white_group or id in white_user
             is_black = group_id not in black_group or id not in black_user
             is_private = private if isinstance(eve, GroupMessageEvent) else True
+            is_bot = id is not eve.self_id
             if to_me and isinstance(eve, GroupMessageEvent):
-                return at_reply
-            return is_admin or is_white or (is_private and is_black)
+                return is_admin or is_white or (at_reply and is_bot and is_black)
+            if isinstance(eve, GroupMessageEvent):
+                return is_admin or is_white or (is_bot and is_black)
+            return is_admin or is_white or (is_private and is_black and is_bot)
         if isinstance(eve, GroupMessageEvent):
             to_me = event.to_me
             if rule_mode == "white":
@@ -1337,6 +1363,8 @@ async def get_chat(id):
         'Authorization': f'Bearer {hx_config.yinying_token}'
     }
     osu = await data_in(None,id,text,nick,False)
+    if not id:
+        return None
     if not osu:
         raise RuntimeError("[Hx]:初始化data失败，终止api调用进程！")
     async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=60, write=20, pool=30)) as client:
@@ -1360,6 +1388,9 @@ async def yinying(groupid,id,text,nick,in_img):
         'Authorization': f'Bearer {hx_config.yinying_token}'
     }
     osu = await data_in(groupid,id,nick,text,in_img)
+    logger.debug(osu)
+    if not osu.get("chatId",None):
+        raise RuntimeError("[Hx]:未找到chatid，无效对话！")
     if not osu:
         raise RuntimeError("[Hx]:初始化data失败，终止api调用进程！")
     async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10, read=60, write=20, pool=30)) as client:
@@ -1389,10 +1420,11 @@ async def get_answer_at(matcher, event, bot):
     img = await get_img_urls(event)
     if  (text == "" or text == None or text == "！d" or text == "/！d") and img == []:
         if text == "！d" or text == "/！d":
-            return
+            return 0
         else:
             msg = "诶唔，你叫我是有什么事嘛？"
             await send_msg(matcher,event,msg)
+            return 0
     if img != []:
         in_img = await image_check(img[0])
         if text == "" or text == None:
@@ -1416,6 +1448,7 @@ async def get_answer_ml(matcher, event ,bot ,msg):
     if  (text == "" or text == None) and img == []:
         msg = "诶唔，你叫我是有什么事嘛？"
         await send_msg(matcher,event,msg)
+        return 0
     if img != []:
         in_img = await image_check(img[0])
         if text == "" or text == None:

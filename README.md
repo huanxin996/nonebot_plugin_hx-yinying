@@ -196,6 +196,13 @@ OneBot:
 - 说明：这里是smms的密码（图床）
 - 重要：非必填（若smm_token为空，则需要填写账号密码）
 
+
+### hx_chatcommand
+- 类型：`list`
+- 默认值：`["hx","chat"]`
+- 说明：这里是聊天自定义命令头
+- 重要：非必填
+
 </details>
 <br>
 
@@ -206,6 +213,7 @@ yinying_appid=你的appid
 yinying_token=你的token(不带bearer)
 hx_path=C:\Users\user\Desktop
 SUPERUSERS=["114514"]
+hx_chatcommand = ["hx","chat"]
 image_check_appid=你的appid
 image_check_token=你的token
 smms_token=你获取到的token
