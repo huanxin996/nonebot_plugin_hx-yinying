@@ -1,9 +1,8 @@
 # -- coding: utf-8 --**
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent ,MessageSegment ,Message,MessageEvent,Event,PrivateMessageEvent
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent ,MessageSegment ,Message,MessageEvent,Event
 from html import unescape
 from typing import List,Set
 import os,httpx, json, time, requests,platform
-from loguru import logger as lg
 from .config import Config
 import operator,nonebot,random
 from nonebot import get_plugin_config, logger, require,get_driver
@@ -12,59 +11,43 @@ require("nonebot_plugin_localstore")
 import nonebot_plugin_localstore as store
 from .image_check import image_check
 from .report import error_oops
-
-
 hx_config = get_plugin_config(Config)
 
+#path---in
+def path_in() -> str:
+    """
+    区分win和lin载入路径
+    """
+    sys = platform.system()
+    if sys == "Windows":
+        if hx_config.hx_path == None:
+            history_dir = store.get_data_dir("Hx_YingYing")
+            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+            log_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            history_dir = store.get_data_dir(f"{hx_config.hx_path}")
+            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+            log_dir.mkdir(parents=True, exist_ok=True)
+    elif sys == "Linux":
+        if hx_config.hx_path == None:
+            history_dir = store.get_data_dir("Hx_YingYing")
+            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_dir = Path(f"{history_dir}/yinying_chat").as_posix()
+        else:
+            history_dir = store.get_data_dir(f"{hx_config.hx_path}")
+            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
+            log_dir.mkdir(parents=True, exist_ok=True)
+            log_dir = Path(f"{history_dir}/yinying_chat").as_posix()
+    return log_dir
+
 #判断主要配置文件夹是否存在！
-if hx_config.hx_path == None:
-    logger.warning("找不到配置里的路径，将使用默认配置")
-    lg.opt(colors=True).success( f"""
-    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
-<fg #60F5F5>,--,                                                                                                 </fg #60F5F5>                 
-<r>      ,--.'|                                       ,--,     ,--,                                 ,---,.               ___   </r> 
-<y>   ,--,  | :                                       |'. \   / .`|  ,--,                         ,'  .'  \            ,--.'|_   </y>
-<g>,---.'|  : '         ,--,                    ,---, ; \ `\ /' / ;,--.'|         ,---,         ,---.' .' |   ,---.    |  | :,' </g> 
-<c>|   | : _' |       ,'_ /|                ,-+-. /  |`. \  /  / .'|  |,      ,-+-. /  |        |   |  |: |  '   ,'\   :  : ' :  </c>
-<e>:   : |.'  |  .--. |  | :    ,--.--.    ,--.'|'   | \  \/  / ./ `--'_     ,--.'|'   |        :   :  :  / /   /   |.;__,'  /   </e>
-<m>|   ' '  ; :,'_ /| :  . |   /       \  |   |  ,"' |  \  \.'  /  ,' ,'|   |   |  ,"' |        :   |    ; .   ; ,. :|  |   |    </m>
-<e>'   |  .'. ||  ' | |  . .  .--.  .-. | |   | /  | |   \  ;  ;   '  | |   |   | /  | |        |   :     \'   | |: ::__,'| :    </e>
-<c>|   | :  | '|  | ' |  | |   \__\/: . . |   | |  | |  / \  \  \  |  | :   |   | |  | |        |   |   . |'   | .; :  '  : |__  </c>
-<g>'   : |  : ;:  | : ;  ; |   ," .--.; | |   | |  |/  ;  /\  \  \ '  : |__ |   | |  |/         '   :  '; ||   :    |  |  | '.'| </g>
-<y>|   | '  ,/ '  :  `--'   \ /  /  ,.  | |   | |--' ./__;  \  ;  \|  | '.'||   | |--'          |   |  | ;  \   \  /   ;  :    ; </y>
-<r>;   : ;--'  :  ,      .-./;  :   .'   \|   |/     |   : / \  \  ;  :    ;|   |/              |   :   /    `----'    |  ,   /  </r>
-<m>|   ,/       `--`----'    |  ,     .-./'---'      ;   |/   \  ' |  ,   / '---'               |   | ,'                ---`-'   </m>
-<r>'---'                      `--`---'               `---'     `--` ---`-'                      `----'</r>
-    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
-""")
-    history_dir = store.get_data_dir("Hx_YingYing")
-    log_dir = Path(f"{history_dir}/yinying_chat").absolute()
-    log_dir.mkdir(parents=True, exist_ok=True)
-else:
-    lg.opt(colors=True).success( f"""
-    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
-<fg #60F5F5>,--,                                                                                                 </fg #60F5F5>                 
-<r>      ,--.'|                                       ,--,     ,--,                                 ,---,.               ___   </r> 
-<y>   ,--,  | :                                       |'. \   / .`|  ,--,                         ,'  .'  \            ,--.'|_   </y>
-<g>,---.'|  : '         ,--,                    ,---, ; \ `\ /' / ;,--.'|         ,---,         ,---.' .' |   ,---.    |  | :,' </g> 
-<c>|   | : _' |       ,'_ /|                ,-+-. /  |`. \  /  / .'|  |,      ,-+-. /  |        |   |  |: |  '   ,'\   :  : ' :  </c>
-<e>:   : |.'  |  .--. |  | :    ,--.--.    ,--.'|'   | \  \/  / ./ `--'_     ,--.'|'   |        :   :  :  / /   /   |.;__,'  /   </e>
-<m>|   ' '  ; :,'_ /| :  . |   /       \  |   |  ,"' |  \  \.'  /  ,' ,'|   |   |  ,"' |        :   |    ; .   ; ,. :|  |   |    </m>
-<e>'   |  .'. ||  ' | |  . .  .--.  .-. | |   | /  | |   \  ;  ;   '  | |   |   | /  | |        |   :     \'   | |: ::__,'| :    </e>
-<c>|   | :  | '|  | ' |  | |   \__\/: . . |   | |  | |  / \  \  \  |  | :   |   | |  | |        |   |   . |'   | .; :  '  : |__  </c>
-<g>'   : |  : ;:  | : ;  ; |   ," .--.; | |   | |  |/  ;  /\  \  \ '  : |__ |   | |  |/         '   :  '; ||   :    |  |  | '.'| </g>
-<y>|   | '  ,/ '  :  `--'   \ /  /  ,.  | |   | |--' ./__;  \  ;  \|  | '.'||   | |--'          |   |  | ;  \   \  /   ;  :    ; </y>
-<r>;   : ;--'  :  ,      .-./;  :   .'   \|   |/     |   : / \  \  ;  :    ;|   |/              |   :   /    `----'    |  ,   /  </r>
-<m>|   ,/       `--`----'    |  ,     .-./'---'      ;   |/   \  ' |  ,   / '---'               |   | ,'                ---`-'   </m>
-<r>'---'                      `--`---'               `---'     `--` ---`-'                      `----'</r>
-    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
-""")
-    logger.success("找到配置里的路径，载入成功")
-    history_dir = store.get_data_dir(f"{hx_config.hx_path}")
-    log_dir = Path(f"{history_dir}/yinying_chat").absolute()
-    log_dir.mkdir(parents=True, exist_ok=True)
+log_dir = path_in()
 
 def number_suiji():
+    """
+    随机数生成
+    """
     digits = "0123456789"
     str_list =[random.choice(digits) for i in range(3)]
     random_str =''.join(str_list)
@@ -72,52 +55,27 @@ def number_suiji():
 
 #判断模型
 def model_got(msg) -> str:
+    """
+    进行一个模型的切换！
+    """
     back = "yinyingllm-v2"
-    try:
-        if msg == "1" or msg == "yinyingllm-v1" or msg == "yinyingllmv1":
-            back = "yinyingllm-v1"
-        elif msg == "2" or msg == "yinyingllm-v2" or msg == "yinyingllmv2":
-            back = "yinyingllm-v2"
-        elif msg == "3" or msg == "yinyingllm-v3" or msg == "yinyingllmv3":
-            back = "yinyingllm-v3"
-        elif msg == "4" or msg == "cyberfurry-001" or msg == "cyberfurry001" or msg == "cyberfurry1":
-            back = "cyberfurry-001"
-        elif msg == "5" or msg == "easycyberfurry-001" or msg == "easycyberfurry001" or msg == "easycyberfurry1":
-            back = "easycyberfurry-001"
-    except Exception as e:
-        return f"{e}"
+    if msg == "1" or msg == "yinyingllm-v1" or msg == "yinyingllmv1":
+        back = "yinyingllm-v1"
+    elif msg == "2" or msg == "yinyingllm-v2" or msg == "yinyingllmv2":
+        back = "yinyingllm-v2"
+    elif msg == "3" or msg == "yinyingllm-v3" or msg == "yinyingllmv3":
+        back = "yinyingllm-v3"
+    elif msg == "4" or msg == "cyberfurry-001" or msg == "cyberfurry001" or msg == "cyberfurry1":
+        back = "cyberfurry-001"
+    elif msg == "5" or msg == "easycyberfurry-001" or msg == "easycyberfurry001" or msg == "easycyberfurry1":
+        back = "easycyberfurry-001"
     return back
-
-#path---in
-def path_in() -> str:
-    sys = platform.system()
-    if sys == "Windows":
-        if hx_config.hx_path == None:
-            history_dir = store.get_data_dir("Hx_YingYing")
-            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
-            log_dir.mkdir(parents=True, exist_ok=True)
-            return log_dir
-        else:
-            history_dir = store.get_data_dir(f"{hx_config.hx_path}")
-            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
-            log_dir.mkdir(parents=True, exist_ok=True)
-            return log_dir
-    elif sys == "Linux":
-        if hx_config.hx_path == None:
-            history_dir = store.get_data_dir("Hx_YingYing")
-            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
-            log_dir.mkdir(parents=True, exist_ok=True)
-            log_dir = Path(f"{history_dir}/yinying_chat").as_posix()
-            return log_dir
-        else:
-            history_dir = store.get_data_dir(f"{hx_config.hx_path}")
-            log_dir = Path(f"{history_dir}/yinying_chat").absolute()
-            log_dir.mkdir(parents=True, exist_ok=True)
-            log_dir = Path(f"{history_dir}/yinying_chat").as_posix()
-            return log_dir
 
 #update-----Hx
 def update_hx():
+    """
+    检查pypi插件最新版本
+    """
     fails = 0
     while True:
         try:
@@ -216,11 +174,17 @@ async def get_img_urls(event: MessageEvent):
 
 #创建用户文件夹
 def create_dir_usr(path):
+    """
+    创建文件夹（绝对路径）
+    """
     if not os.path.exists(path):
         os.mkdir(path)
 
 #获取json函数
 def json_get(data, *keys, default=None):
+    """
+    从json中遍历获取数据
+    """
     try:
         for key in keys:
             try:
@@ -231,30 +195,41 @@ def json_get(data, *keys, default=None):
     except Exception as e:
         return False
 
-async def json_get_text(json,key) -> str:
+async def json_get_pro(json,key) -> str:
+    """
+    从json获取数据的补充
+    """
     try:
         back = json[f"{key}"]
     except Exception as e:
-        back = 0
+        back = 2
     return back
 
-def json_get_time(json,key) -> str:
-    try:
-        back = json[f"{key}"]
-    except Exception as e:
-        back = 1
-    return back
+#违禁词剔除函数
+def ban_word(text:str) -> str:
+    """
+    违禁词剔除函数
+    """
+    ban_word_list = json_get(config_in_global(),"blacklist_world")
+    for i in ban_word_list:
+        if i in text:
+            text = text.replace(i,"w")
+    return text
 
 #json转义防止爆炸（）
 def json_replace(text) -> str:
-    text = text.replace('\n','/n')
-    text = text.replace('\t','/t')
+    """
+    移除',"导致的转义问题
+    """
     text = text.replace("'","/'")
     text = text.replace('"','/"')
     return text
 
 #初始化log记录
 def log_in()-> str:
+    """
+    初始化聊天记录
+    """
     try:
         if os.path.exists(f"{log_dir}/chat/all_log.json"):
             with open(f'{log_dir}/chat/all_log.json','r',encoding='utf-8') as file:
@@ -289,6 +264,9 @@ def log_in()-> str:
 
 #检查更新
 def check_update():
+    """
+    检查插件更新
+    """
     new_verision, time = update_hx()
     if not new_verision and not time:
         logger.error(f"[Hx_YinYing]:无法获取最新的版本，当前版本为{hx_config.hx_version}，可能已经过时！")
@@ -311,6 +289,9 @@ def check_update():
 
 #载入本地保存的easycyber预设(一些情况下失败时不会清空，请找到专业人员修复)
 def easycyber_in(cybernick,json_1) -> str:
+    """
+    载入本地保存的easycyber预设(一些情况下失败时不会清空，请找到专业人员修复)
+    """
     try:
         if os.path.exists(f"{log_dir}/config/easycyber.json"):
             with open(f'{log_dir}/config/easycyber.json','r',encoding='utf-8') as file:
@@ -383,6 +364,9 @@ def easycyber_in(cybernick,json_1) -> str:
 
 #载入本地投稿的easycyber预设(载入失败会被清空
 def easycyber_in_tg(cybernick,json_1) -> str:
+    """
+    载入本地投稿的easycyber预设(载入失败会被清空
+    """
     t = time.time()
     try:
         if os.path.exists(f"{log_dir}/file/easycyber_tg.json"):
@@ -450,6 +434,9 @@ def easycyber_in_tg(cybernick,json_1) -> str:
 
 #载入本地保存的cyber预设(一些情况下失败时不会清空，请找到专业人员修复)
 def cyber_in(cybernick,json_1) -> str:
+    """
+    载入本地保存的cyber预设(一些情况下失败时不会清空，请找到专业人员修复)
+    """
     try:
         if os.path.exists(f"{log_dir}/config/cyber.json"):
             with open(f'{log_dir}/config/cyber.json','r',encoding='utf-8') as file:
@@ -516,6 +503,9 @@ def cyber_in(cybernick,json_1) -> str:
 
 #载入本地投稿的cyber预设(载入失败会被清空
 def cyber_in_tg(cybernick,json_1) -> str:
+    """
+    载入本地投稿的cyber预设(载入失败会被清空
+    """
     t = time.time()
     try:
         if os.path.exists(f"{log_dir}/file/cyber_tg.json"):
@@ -575,6 +565,9 @@ def cyber_in_tg(cybernick,json_1) -> str:
 
 #载入全局本地配置
 def config_in_global() -> str:
+    """
+    载入全局配置，失败时会重置
+    """
     try:
         json_data = {}
         admin_user = []
@@ -623,6 +616,9 @@ def config_in_global() -> str:
 
 #载入群聊本地配置
 def config_in_group(groupid) -> str:
+    """
+    载入群组本地配置，失败会重置
+    """
     dt = time.time()
     t = int(dt)
     id_package = {}
@@ -663,6 +659,9 @@ def config_in_group(groupid) -> str:
 
 #载入个人本地配置
 def config_in_user(id,nick) -> str:
+    """
+    载入个人本地配置，失败会重置
+    """
     dt = time.time()
     t = int(dt)
     id_package = {}
@@ -723,6 +722,9 @@ def config_in_user(id,nick) -> str:
 
 #结果消息函数，发送消息直接await就行
 async def send_msg_reject(matcher, event, content):
+    """
+    结束---发送消息
+    """
     config_global = config_in_global()
     reply_config = json_get(config_global,"reply")
     if reply_config == True:
@@ -733,6 +735,9 @@ async def send_msg_reject(matcher, event, content):
 
 #用户输入
 def user_in(id, text):
+    """
+    记录用户输入内容
+    """
     data = log_in()
     config = config_in_user(id,False)
     line = config[f'{id}']['world_timeline']
@@ -764,9 +769,11 @@ def user_in(id, text):
         logger.warning(f"用户{id}配置文件写入失败，{e}，尝试创建文件夹")
         create_dir_usr(f'{log_dir}/user/{id}')
 
-
 #AI输出
 def ai_out(id, text):
+    """
+    记录ai输入内容
+    """
     data = log_in()
     config = config_in_user(id,False)
     line = config[f'{id}']['world_timeline']
@@ -800,6 +807,9 @@ def ai_out(id, text):
 
 #获取配置内键值并列表化
 async def config_list(config):
+    """
+    列表化config里的项
+    """
     try:
         tf_key = []
         w_key = []
@@ -824,6 +834,9 @@ async def config_list(config):
 
 #获取nonebot超级管理组
 def get_superuser() -> list:
+    """
+    获取nonebot超级管理组
+    """
     list_superuser = get_driver().config.superusers
     try:
         if list_superuser == None or not list_superuser:
@@ -837,6 +850,9 @@ def get_superuser() -> list:
 
 #全局权限检查！！！！！（总算写出来了）
 def place(id) -> int:
+    """
+    权限检查。。
+    """
     try:
         config = config_in_global()
         admin_pro = json_get(config,"admin_pro")
@@ -860,6 +876,9 @@ def place(id) -> int:
 
 #rule---管理组
 async def chek_rule_admin(event:MessageEvent):
+    """
+    检查管理权限
+    """
     id = get_id(event)
     config = config_in_global()
     admin_list = json_get(config,"admin_user")
@@ -877,6 +896,9 @@ async def chek_rule_admin(event:MessageEvent):
 
 #rule---用户组
 async def chek_rule_base(event:MessageEvent,eve:Event):
+    """
+    检查用户权限
+    """
     try:
         id = get_id(event)
         group_id = get_groupid(event)
@@ -899,8 +921,6 @@ async def chek_rule_base(event:MessageEvent,eve:Event):
             is_bot = id is not eve.self_id
             if to_me and isinstance(eve, GroupMessageEvent):
                 return is_admin or is_white or (at_reply and is_bot and is_black)
-            if isinstance(eve, GroupMessageEvent):
-                return is_admin or is_white or (is_bot and is_black)
             return is_admin or is_white or (is_private and is_black and is_bot)
         if isinstance(eve, GroupMessageEvent):
             to_me = event.to_me
@@ -917,7 +937,10 @@ async def chek_rule_base(event:MessageEvent,eve:Event):
         return True
 
 #尝试获取bot本地文件夹文件
-def file_get(file) -> str:
+async def file_get(file) -> str:
+    """
+    尝试获取bot本地文件夹文件
+    """
     try:
         if os.path.exists(f"{log_dir}/file/{file}"):
             back = f"{log_dir}/file/{file}"
@@ -929,6 +952,9 @@ def file_get(file) -> str:
 
 #历史消息卡片构建
 async def get_history(id,bot,event) -> List[MessageSegment]:
+    """
+    构建消息记录转发
+    """
     date = log_in()
     log_list = date[f"{id}"]["log"]
     t = len(log_list)
@@ -970,7 +996,10 @@ async def get_history(id,bot,event) -> List[MessageSegment]:
     return msg_list
 
 #历史消息文件获取
-def gethistorytxt(id,filename):
+async def gethistorytxt(id,filename):
+    """
+    获取文件类型的聊天记录
+    """
     file_path=f"{log_dir}  / user / {id}"
     if not os.path.exists(f"{file_path}"):
         create_dir_usr(f"{file_path}")
@@ -982,6 +1011,9 @@ def gethistorytxt(id,filename):
 
 #全局配置卡片构建
 async def get_config_global() -> List[MessageSegment]:
+    """
+    构建全局配置卡片
+    """
     config = config_in_global()
     msg_list = []
     try:
@@ -1082,6 +1114,9 @@ async def get_config_global() -> List[MessageSegment]:
 
 #获取纯文本
 async def gen_chat_text(event, bot: Bot) -> str:
+    """
+    提取消息内纯文本
+    """
     msg = ""
     for seg in event.message:
         if seg.is_text():
@@ -1108,6 +1143,9 @@ async def gen_chat_text(event, bot: Bot) -> str:
 
 #收束时间线
 def keep_timeline(id):
+    """
+    刷新对话id，尝试保留记忆，尝试给他完整的一生。。。
+    """
     data = log_in()
     config = config_in_user(id,False)
     world_line = int(config[f'{id}']['world_times'] + 1)
@@ -1123,8 +1161,11 @@ def keep_timeline(id):
         json.dump(data,file)
     return config,world_line
 
-#手动刷新对话
+#刷新对话
 def clear_id(id,nick):
+    """
+    刷新时间线，一切重置.....
+    """
     data = log_in()
     config = config_in_user(id,nick)
     line = str(number_suiji())
@@ -1150,6 +1191,9 @@ def clear_id(id,nick):
 
 #获取记忆。。
 async def get_worldline(groupid,id,nick) ->str:
+    """
+    获取时间线记忆体，并尝试保留。
+    """
     config = config_in_user(id,False)
     id_config = json_get(config,id)
     if json_get(id_config,"nick"):
@@ -1173,8 +1217,12 @@ async def get_worldline(groupid,id,nick) ->str:
 
 #尝试标准对话格式
 async def init_msg(text,id,nick,model) ->str:
+    """
+    标准对话格式，尝试剔除违禁词。
+    """
     endless_model = json_get(json_get(config_in_user(id,nick),id),"model_endless")
     sendmsg = ""
+    text = ban_word(text)
     if model not in {"cyberfurry-001", "easycyberfurry-001"}:
         sendmsg += f"{text}"
     elif endless_model and model in {"cyberfurry-001", "easycyberfurry-001"}:
@@ -1203,7 +1251,10 @@ async def init_msg(text,id,nick,model) ->str:
 
 #封装消息格式化
 def format_message(back_msg, times, limit=None, world_times=None, lifes=None):
-    if world_times:
+    """
+    格式化返回消息
+    """
+    if world_times or lifes:
         return f"{back_msg}\n[时..无限.环...overlines{world_times}-{times}]"
     elif lifes:
         return f"{back_msg}\n[时..无限.环...overlines{lifes}-0]"
@@ -1216,13 +1267,22 @@ def format_message(back_msg, times, limit=None, world_times=None, lifes=None):
 
 #对于api返回内容进行简单处理
 async def yinying_back(back,groupid,id,nick,text) ->str:
-    back_msg = back.get('choices')[0].get('message').get('content', '无法获取')
-    back_model = back.get('choices')[0].get('message').get('role', '无法获取')
+    """
+    对于api返回内容进行简单处理
+    """
+    status = back.get('status',True)
+    back_msg = back.get('choices')[0].get('message').get('content', None)
+    back_model = back.get('choices')[0].get('message').get('role', None)
+    if not status:
+        return f"api返回错误，请检查api是否正常！\n{back}"
     if groupid:
         model = json_get(config_in_group(groupid),groupid,"use_model")
     else:
         model = json_get(config_in_user(id,nick),id,"private_model")
     if back_model != "assistant":
+        if "刷新对话试试吧" in back_msg:
+            clear_id(id,nick)
+            return "时间线出现错误，已重置。"
         g = json_get(config_in_global(),"admin_group")
         if not g:
             logger.warning(f"无bot管理群聊，上报触发检测失败")
@@ -1258,6 +1318,9 @@ async def yinying_back(back,groupid,id,nick,text) ->str:
 
 #获取并载入角色设定--构建发送消息体
 def update_character_set(characterSet, promte):
+    """
+    载入角色设定--构建发送消息体
+    """
     if promte:
         characterSet.update({
             'cfNickname': promte.get('cfNickname', "Hx"),
@@ -1277,6 +1340,9 @@ def update_character_set(characterSet, promte):
 
 #加载模型处理--构建发送消息体
 def process_model(model=None, id_config=None, group_config=None, id=None, nick=None, character=None, text=None, img=None, times=None):
+    """
+    加载模型处理--构建发送消息体
+    """
     packages_data = {}
     allvariables = {'nickName': nick, 'furryCharacter': character}
     packages_data['appId'] = f'{hx_config.yinying_appid}'
@@ -1299,7 +1365,7 @@ def process_model(model=None, id_config=None, group_config=None, id=None, nick=N
         packages_data['chatId'] = f'{hx_config.yinying_appid}-{id}-{times}-{model}'
         packages_data['message'] = text
     elif model == "yinyingllm-v2" or model == "yinyingllm-v1" or model == "yinyingllm-v3":
-        packages_data['chatId'] = f'{hx_config.yinying_appid}-{id}-{times}-yinyingllm-v2'
+        packages_data['chatId'] = f'{hx_config.yinying_appid}-{id}-{times}-{model}'
         packages_data['variables'] = allvariables
         packages_data['message'] = text
         if img:
@@ -1316,6 +1382,9 @@ def process_model(model=None, id_config=None, group_config=None, id=None, nick=N
 
 #构建发送消息体
 async def data_in(groupid, id, nick, text, img):
+    """
+    构建传递给api的主体
+    """
     id_config = json_get(config_in_user(id,nick), id)
     character = json_get(id_config, "character")
     times = json_get(id_config, "time")
@@ -1340,6 +1409,9 @@ async def data_in(groupid, id, nick, text, img):
 
 #全局发送消息函数，发送消息直接await就行
 async def send_msg(matcher, event, content):
+    """
+    全局发送消息--结尾
+    """
     config_global = config_in_global()
     reply_config = json_get(config_global,"reply")
     if reply_config == True:
@@ -1350,6 +1422,9 @@ async def send_msg(matcher, event, content):
 
 #订阅消息发送构建！
 async def get_chat(id):
+    """
+    订阅消息构建！
+    """
     dt = time.time()
     t = int(dt)
     config = config_in_user(id,False)
@@ -1357,7 +1432,7 @@ async def get_chat(id):
     last_chattime = config[f"{id}"]["time"]
     time_later = t - last_chattime
     nick = json_get(id_config,"nick")
-    text = f"{nick}已经有{time_later}秒没有找你聊天了，{nick}就是我，快去看看{nick}在干什么吧,以第一人称生成一段面对{nick}时想找{nick}聊天的话"
+    text = f"{nick}已经有{time_later}秒没有找你聊天了,请以第一人称生成一段面对{nick}时想找{nick}聊天的话"
     headers = {
         'Content-type': 'application/json',
         'Authorization': f'Bearer {hx_config.yinying_token}'
@@ -1383,6 +1458,9 @@ async def get_chat(id):
 
 #主要构建
 async def yinying(groupid,id,text,nick,in_img):
+    """
+    向api发送内容
+    """
     headers = {
         'Content-type': 'application/json',
         'Authorization': f'Bearer {hx_config.yinying_token}'
@@ -1413,22 +1491,21 @@ async def yinying(groupid,id,text,nick,in_img):
 
 #获取回复（被艾特）
 async def get_answer_at(matcher, event, bot):
+    """
+    被艾特时触发
+    """
     text = unescape(await gen_chat_text(event, bot))
     groupid = get_groupid(event)
     id = get_id(event)
     nick = await get_nick(bot,event)
     img = await get_img_urls(event)
-    if  (text == "" or text == None or text == "！d" or text == "/！d") and img == []:
-        if text == "！d" or text == "/！d":
-            return 0
-        else:
-            msg = "诶唔，你叫我是有什么事嘛？"
-            await send_msg(matcher,event,msg)
+    messag = event.get_message()
+    if  (text == "" or text == None or text == "！d" or text == "/！d" or len(messag["text"])==0) and img == []:
             return 0
     if img != []:
         in_img = await image_check(img[0])
         if text == "" or text == None:
-            back_msg = str(await yinying(groupid,id,"看看这个图片",nick,in_img))
+            back_msg = str(await yinying(groupid,id,"看看这个",nick,in_img))
         else:
             back_msg = str(await yinying(groupid,id,text,nick,in_img))
         msg = back_msg.replace("/n","\n")
@@ -1440,19 +1517,21 @@ async def get_answer_at(matcher, event, bot):
 
 #获取回复（指令触发）
 async def get_answer_ml(matcher, event ,bot ,msg):
+    """
+    指令触发
+    """
     text = msg.extract_plain_text()
     img = await get_img_urls(event)
     groupid = get_groupid(event)
     id = get_id(event)
     nick = await get_nick(bot,event)
-    if  (text == "" or text == None) and img == []:
-        msg = "诶唔，你叫我是有什么事嘛？"
-        await send_msg(matcher,event,msg)
-        return 0
+    messag = event.get_message()
+    if  (text == "" or text == None or len(messag["text"])==0) and img == []:
+            return 0
     if img != []:
         in_img = await image_check(img[0])
         if text == "" or text == None:
-            back_msg = str(await yinying(groupid,id,"看看这个图片",nick,in_img))
+            back_msg = str(await yinying(groupid,id,"看看这个",nick,in_img))
         else:
             back_msg = str(await yinying(groupid,id,text,nick,in_img))
         msg = back_msg.replace("/n","\n")

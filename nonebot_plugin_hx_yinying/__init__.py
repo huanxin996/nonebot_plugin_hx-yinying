@@ -18,7 +18,8 @@ from nonebot.rule import to_me,Rule
 import json,random
 from .config import Config
 from .chat import *
-from .report import error_oops
+from .report import error_oops,get_file
+hx_config = get_plugin_config(Config)
 
 __plugin_meta__ = PluginMetadata(
     name="Hx_YinYing",
@@ -34,17 +35,38 @@ __plugin_meta__ = PluginMetadata(
     },
 )
 
-hx_config = get_plugin_config(Config)
+#awa--------味大，无需多盐！
+logger.opt(colors=True).success( f"""
+    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+<fg #60F5F5>,--,                                                                                                 </fg #60F5F5>                 
+<r>      ,--.'|                                       ,--,     ,--,                                 ,---,.               ___   </r> 
+<y>   ,--,  | :                                       |'. \   / .`|  ,--,                         ,'  .'  \            ,--.'|_   </y>
+<g>,---.'|  : '         ,--,                    ,---, ; \ `\ /' / ;,--.'|         ,---,         ,---.' .' |   ,---.    |  | :,' </g> 
+<c>|   | : _' |       ,'_ /|                ,-+-. /  |`. \  /  / .'|  |,      ,-+-. /  |        |   |  |: |  '   ,'\   :  : ' :  </c>
+<e>:   : |.'  |  .--. |  | :    ,--.--.    ,--.'|'   | \  \/  / ./ `--'_     ,--.'|'   |        :   :  :  / /   /   |.;__,'  /   </e>
+<m>|   ' '  ; :,'_ /| :  . |   /       \  |   |  ,"' |  \  \.'  /  ,' ,'|   |   |  ,"' |        :   |    ; .   ; ,. :|  |   |    </m>
+<e>'   |  .'. ||  ' | |  . .  .--.  .-. | |   | /  | |   \  ;  ;   '  | |   |   | /  | |        |   :     \'   | |: ::__,'| :    </e>
+<c>|   | :  | '|  | ' |  | |   \__\/: . . |   | |  | |  / \  \  \  |  | :   |   | |  | |        |   |   . |'   | .; :  '  : |__  </c>
+<g>'   : |  : ;:  | : ;  ; |   ," .--.; | |   | |  |/  ;  /\  \  \ '  : |__ |   | |  |/         '   :  '; ||   :    |  |  | '.'| </g>
+<y>|   | '  ,/ '  :  `--'   \ /  /  ,.  | |   | |--' ./__;  \  ;  \|  | '.'||   | |--'          |   |  | ;  \   \  /   ;  :    ; </y>
+<r>;   : ;--'  :  ,      .-./;  :   .'   \|   |/     |   : / \  \  ;  :    ;|   |/              |   :   /    `----'    |  ,   /  </r>
+<m>|   ,/       `--`----'    |  ,     .-./'---'      ;   |/   \  ' |  ,   / '---'               |   | ,'                ---`-'   </m>
+<r>'---'                      `--`---'               `---'     `--` ---`-'                      `----'</r>
+    <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
+""")
+
+
 global_config = config_in_global()
 dy_list = json_get(config_in_global(),"dy_list")
 log_dir = path_in()
-   
-#检查关键配置
+
+#检查关键配置，自动更新-0.2day
 if not hx_config.yinying_appid or not hx_config.yinying_token:
     logger.error("未设置核心配置？！,请检查你配置里的yinying_appid和yinying_token")
 else:
-    logger.opt(colors=True).success("【Hx】加载核心配置成功")
-
+    scheduler.add_job(func=check_update,trigger='interval',hours=3,id="huanxin996")
+    logger.opt(colors=True).success(f"【Hx】定时检测更新启动。")
+    logger.opt(colors=True).success("【Hx】加载核心配置成功,定时检测更新启动。")
 
 #检测更新
 try:
@@ -52,12 +74,13 @@ try:
 except Exception as e:
     logger.opt(colors=True).error("【Hx】检测更新失败！！，联系开发者！错误捕获{e}")
 
-#尝试自动更新-0.2day
-try:
-    scheduler.add_job(func=check_update,trigger='interval',hours=3,id="huanxin996")
-    logger.opt(colors=True).success(f"【Hx】定时检测更新启动。")
-except Exception as e:
-    logger.opt(colors=True).error(f"【Hx】定时检测更新启动失败！！，联系开发者！错误捕获{e}")
+#尝试检查错误模块
+if os.path.exists(f"{log_dir}/file/error_report/hx_error.html"):
+    logger.success("已加载错误报告模块")
+else:
+    logger.error("未找到错误报告模块的文件，尝试下载。。。")
+    get_file()
+
 
 #根据订阅信息注册定时任务
 try:
@@ -65,19 +88,26 @@ try:
     for key in dy_list:
         config_1 = config_in_user(key,False)
         user_config = json_get(config_1,key)
-        config_time = json_get_time(user_config,"dy_time")
-        config_minute = json_get_time(user_config,"dy_minute")
+        config_time = json_get_pro(user_config,"dy_time")
+        config_minute = json_get_pro(user_config,"dy_minute")
         scheduler.add_job(func=get_chat,trigger='interval',args=[key] ,hours=config_time, minutes=config_minute, id=key)
     logger.opt(colors=True).success(f"【Hx】定时任务加载成功,当前共加载{extent}个订阅用户")
 except Exception as e:
     logger.opt(colors=True).error(f"【Hx】定时任务加载失败！！，联系开发者！错误捕获{e}")
 
-
+#加载自定义文件集
+if hx_config.hx_chatcommand:
+    logger.success(f"【Hx】命令列表加载成功,当前自定义命令列表为{hx_config.hx_chatcommand}")
+    ml_st = hx_config.hx_chatcommand
+else:
+    logger.error(f"【Hx】命令列表加载失败，请检查配置文件")
+    ml_st = {'hx','chat'}
 
 
 #主要命令列表
+help = on_command("yy帮助", aliases={"yinyinghelp","hx_help","hx_yinying_help"},rule=Rule(chek_rule_base),  priority=0, block=True)
 msg_at = on_message(rule=Rule(chek_rule_base)&to_me(), priority=10,  block=True)
-msg_ml = on_command("yinying_chat", aliases=hx_config.hx_chatcommand,rule=Rule(chek_rule_base),  priority=15, block=True)
+msg_ml = on_command("yinying_chat", aliases=ml_st,rule=Rule(chek_rule_base),  priority=15, block=True)
 clear =  on_command("刷新对话", aliases={"clear"},rule=Rule(chek_rule_base),  priority=0, block=True)
 history_get = on_command("导出对话", aliases={"getchat"},rule=Rule(chek_rule_base),  priority=0, block=True)
 set_global_config = on_command("设置全局配置", aliases={"设置配置全局","globalset"},rule=Rule(chek_rule_admin),  priority=0, block=True)
@@ -91,7 +121,31 @@ character = on_command("sd", aliases={"旅行伙伴加入","设定加入"},rule=
 chat_ne = on_command("加入订阅", aliases={"旅行伙伴觉醒","订阅加入"},rule=Rule(chek_rule_base),  priority=0, block=True)
 time_noend = on_command("切换时间线", aliases={"切换模式"},rule=Rule(chek_rule_base),  priority=0, block=True)
 gloubalblack_add = on_command("全局拉黑", aliases={"银影不要理"},rule=Rule(chek_rule_admin),  priority=0, block=True)
+banword_add = on_command("添加违禁词", aliases={"banword","违禁词添加"},rule=Rule(chek_rule_admin),  priority=0, block=True)
 ces = on_command("测试服务", aliases={"测试报错"},rule=Rule(chek_rule_base), priority=0, block=True)
+
+@help.handle()
+async def help(matcher: Matcher,event: MessageEvent):
+    msg = "-----帮助列表-----\n刷新对话\n导出对话\n设置全局配置\n模型列表\n切换模型\neasycyber\ncyber\n控制台操作\n确认版本\n旅行伙伴加入\n切换时间线\n全局拉黑\n添加违禁词\n-----(点头)-----"
+    await send_msg(matcher, event, msg)
+
+#添加违禁词。
+@banword_add.handle()
+async def banword_add(matcher: Matcher,event: MessageEvent, msg: Message = CommandArg()):
+    text = msg.extract_plain_text()
+    config_1 = config_in_global()
+    banword = json_get(config_1,"blacklist_world")
+    if not text:
+        msg= f"咱不知道要添加什么违禁词哦。"
+    else:
+        if text in banword:
+            await send_msg(matcher, event, f"{text}已在违禁词列表里了！")
+        banword.append(text)
+        config_1["blacklist_world"] = banword
+        with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
+            json.dump(config_1,file)
+            msg= f"{text}已添加到违禁词列表里"
+    await send_msg(matcher, event, msg)
 
 #生命模式-无限时间(仅供cyber和easycyber使用)
 @time_noend.got(
@@ -145,8 +199,7 @@ async def gloubalblack_add(matcher: Matcher,bot:Bot,event: MessageEvent, msg: Me
             msg= f"{text}拉黑成功"
     await send_msg(matcher, event, msg)
 
-
-#自定义自己的设定
+#自定义自己的设定和昵称
 @character.handle()
 async def character(matcher: Matcher,bot:Bot, event: MessageEvent, msg: Message = CommandArg()):
     user = get_id(event)
@@ -299,8 +352,8 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
     if s["last"]:
         if s["last"] == "查看":
             config = config_in_global()
-            get_config = await json_get_text(config,text)
-            if get_config == 0:
+            get_config = await json_get_pro(config,text)
+            if get_config == 2:
                 s["last"] = True
                 msg = f"无法查找到该配置项！，请检查其是否为正确的配置名{text}"
                 await send_msg(matcher,event,msg)
@@ -341,7 +394,7 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
         if s["last"] == "修改TF":
             config = config_in_global()
             config_name = s["set"]
-            get_config = await json_get_text(config,config_name)
+            get_config = await json_get_pro(config,config_name)
             logger.debug(f"{get_config}")
             key = {"on":False,"off":False,"开":True,"关":False,"开启":True,"关闭":False}
             if text in key:
@@ -370,7 +423,7 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
         if s["last"] == "修改w":
             config = config_in_global()
             config_name = s["set"]
-            get_config = await json_get_text(config,config_name)
+            get_config = await json_get_pro(config,config_name)
             config[f"{config_name}"] = int(text)
             with open(f'{log_dir}/config/config_global.json','w',encoding='utf-8') as file:
                 json.dump(config,file)

@@ -9,7 +9,7 @@ from loguru import logger
 from tqdm import tqdm
 from nonebot.message import run_postprocessor as hxerror
 from nonebot.adapters.onebot.v11 import (
-   Bot,  MessageEvent ,MessageSegment,GroupMessageEvent
+   Bot,  MessageEvent ,MessageSegment
 )
 from .config import Config
 
@@ -26,6 +26,9 @@ else:
     file.mkdir(parents=True, exist_ok=True)
 
 def get_file():
+    """
+    尝试下载报错主要文件
+    """
     url = "http://api.wer.plus/api/lanz?url=https://wwp.lanzoup.com/i1TJF1wvd6aj&t=1"
     try:
         file_get = requests.get(url=url,stream=True)
@@ -46,18 +49,15 @@ def get_file():
     except:
         logger.error("尝试补全失败！全局报错可能无法使用")
 
-if os.path.exists(f"{file}/file/error_report/hx_error.html"):
-    logger.success("已加载错误报告模块")
-else:
-    logger.error("未找到错误报告模块的文件，尝试下载。。。")
-    get_file()
-
 
 class BotRunTimeError(Exception):
     """bot runtime error"""
     
 #崩溃返回图片化
 async def error_oops(err_values:Exception = None):
+    """
+    报错图片的制作
+    """
     if err_values == None:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         data = traceback.format_exc()
@@ -83,6 +83,9 @@ async def error_oops(err_values:Exception = None):
 
 @hxerror
 async def post_run(bot: Bot, event: MessageEvent, e: Exception) -> None:
+    """
+    出现错误时自动报错--报错信息不详细
+    """
     img = await error_oops(e)
     try:
         groupid = event.group_id

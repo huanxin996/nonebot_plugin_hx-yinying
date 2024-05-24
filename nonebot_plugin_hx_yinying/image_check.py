@@ -35,39 +35,31 @@ async def image_upload(url:str)->str:
         logger.debug(f"[Hx]图片上传成功，图床链接为:{file}")
         return file
     else:
-        logger.error("[Hx]图片上传失败")
-        return False
-
-
-
+        logger.error("[Hx]图片上传失败,返回url尝试直接调用")
+        return url
 
 async def image_check(url:str)->str:
     img0 = await image_upload(url)
     if hx_config.image_check_appid == None or hx_config.image_check_token == None:
         logger.warning("[Hx]未配置图像检测，若因图像违规导致被封开发者id，插件开发者概不负责！！！")
-    if img0:
-        logger.debug("[Hx]尝试检查图片【爱来自阿里】")
-        runtime_option = RuntimeOptions()
-        img = requests.get(img0).content
-        task1 = ScanImageAdvanceRequestTask()
-        task1.image_urlobject=io.BytesIO(img)
-        scan_image_request = ScanImageAdvanceRequest(
-        task=[task1],
-        scene=['porn']
-        )
-        try:
-            client = Client(config)
-            response = client.scan_image_advance(scan_image_request, runtime_option)
-            back = response.body.to_map()
-            msg0 = back["Data"]["Results"][0]["SubResults"][0]["Rate"]
-            logger.debug(msg0)
-            if msg0 <= 0.6:
-                logger.warning(f"[Hx]图片违规，请重新上传")
-                msg = False
-            else:
-                msg = img0
-            return msg
-        except Exception as e:
-            return False
+        return img0
+    logger.debug("[Hx]尝试检查图片【爱来自阿里】")
+    runtime_option = RuntimeOptions()
+    img = requests.get(img0).content
+    task1 = ScanImageAdvanceRequestTask()
+    task1.image_urlobject=io.BytesIO(img)
+    scan_image_request = ScanImageAdvanceRequest(
+    task=[task1],
+    scene=['porn']
+    )
+    client = Client(config)
+    response = client.scan_image_advance(scan_image_request, runtime_option)
+    back = response.body.to_map()
+    msg0 = back["Data"]["Results"][0]["SubResults"][0]["Rate"]
+    logger.debug(msg0)
+    if msg0 <= 0.6:
+        logger.warning(f"[Hx]图片违规，请重新上传")
+        msg = False
     else:
-        return False
+        msg = img0
+    return msg

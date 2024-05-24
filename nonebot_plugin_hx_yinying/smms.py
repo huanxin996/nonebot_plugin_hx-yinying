@@ -11,35 +11,37 @@ from nonebot.drivers import HTTPClientMixin, Request
 from .config import Config, ApiResponse, FileInfo
 plugin_config = get_plugin_config(Config)
 
-#尝试获取smms的用户token
-def smms_gettoken():
-    fails = 0
-    while True:
-        try:
-            if fails >= 20:
-                token = False
-                break
-            json = {
-                "username": f"{plugin_config.smms_username}",
-                "password": f"{plugin_config.smms_password}"
-            }
-            ret = requests.post(url="https://sm.ms/api/v2/token",data=json,timeout=50)
-            if ret.status_code == 200:
-                json = ret.json()
-                token = json["data"]["token"]
-            else:
-                continue
-        except:
-            fails += 1
-            logger.warning(f"{ret}")
-            logger.warning("网络状况不佳，获取token失败！，正在重新尝试")
-        else:
-            break
-    return token
-
 class SMMS:
     driver: HTTPClientMixin
     headers: Dict[str, Any]
+
+    def smms_gettoken():
+        """
+        尝试获取smms的用户token
+        """
+        fails = 0
+        while True:
+            try:
+                if fails >= 20:
+                    token = False
+                    break
+                json = {
+                    "username": f"{plugin_config.smms_username}",
+                    "password": f"{plugin_config.smms_password}"
+                }
+                ret = requests.post(url="https://sm.ms/api/v2/token",data=json,timeout=50)
+                if ret.status_code == 200:
+                    json = ret.json()
+                    token = json["data"]["token"]
+                else:
+                    continue
+            except:
+                fails += 1
+                logger.warning(f"{ret}")
+                logger.warning("网络状况不佳，获取token失败！，正在重新尝试")
+            else:
+                break
+        return token
 
     def __init__(self):
         driver = get_driver()
@@ -54,7 +56,7 @@ class SMMS:
             if plugin_config.smms_username is None or plugin_config.smms_password is None:
                  raise RuntimeError("[Hx]:未知用户！！！")
             else:
-                token = smms_gettoken()
+                token = SMMS.smms_gettoken()
                 logger.warning(f"[Hx]smms token: {token},推荐将此值填入.env文件或.env.prod文件中")
                 self.driver = driver
                 self.headers = {"Authorization": f"{token}"}
@@ -63,6 +65,9 @@ class SMMS:
             self.headers = {"Authorization": plugin_config.smms_token}
 
     async def upload(self, file: Union[bytes, Path, BytesIO]) -> Optional[FileInfo]:
+        """
+        向smms图床上传图片
+        """
         if isinstance(file, Path):
             smfile = file.read_bytes()
         elif isinstance(file, BytesIO):
@@ -98,6 +103,9 @@ class SMMS:
         return content.data.url
 
     async def delete(self, hash: str):
+        """
+        从smms图床删除图片
+        """
         request = Request(
             "GET",
             url=f"{plugin_config.smms_api_url}/delete/{hash}",
