@@ -4,7 +4,7 @@ from pydantic import BaseModel,AnyHttpUrl,Field
 
 class Config(BaseModel):
     # 插件版本号勿动！！！！
-    hx_version: Optional[str] = "1.3.13"
+    hx_version: Optional[str] = "1.3.14"
     # 秩乱v你的appid
     yinying_appid: Optional[str] = None
     #自定义命令头，默认为hx chat yinying

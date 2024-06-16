@@ -40,7 +40,7 @@ async def image_upload(url:str)->str:
 
 async def image_check(url:str)->str:
     img0 = await image_upload(url)
-    if hx_config.image_check_appid == None or hx_config.image_check_token == None:
+    if hx_config.image_check_appid == None or hx_config.image_check_token == None or hx_config.image_check_token == "":
         logger.warning("[Hx]未配置图像检测，若因图像违规导致被封开发者id，插件开发者概不负责！！！")
         return img0
     logger.debug("[Hx]尝试检查图片【爱来自阿里】")

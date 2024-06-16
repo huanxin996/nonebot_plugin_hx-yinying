@@ -58,13 +58,13 @@ def model_got(msg) -> str:
     """
     进行一个模型的切换！
     """
-    back = "yinyingllm-v2"
+    back = "yinyingllm-v4"
     if msg == "1" or msg == "yinyingllm-v1" or msg == "yinyingllmv1":
         back = "yinyingllm-v1"
-    elif msg == "2" or msg == "yinyingllm-v2" or msg == "yinyingllmv2":
-        back = "yinyingllm-v2"
-    elif msg == "3" or msg == "yinyingllm-v3" or msg == "yinyingllmv3":
+    elif msg == "2" or msg == "yinyingllm-v3" or msg == "yinyingllmv3":
         back = "yinyingllm-v3"
+    elif msg == "3" or msg == "yinyingllm-v4" or msg == "yinyingllmv4":
+        back = "yinyingllm-v4"
     elif msg == "4" or msg == "cyberfurry-001" or msg == "cyberfurry001" or msg == "cyberfurry1":
         back = "cyberfurry-001"
     elif msg == "5" or msg == "easycyberfurry-001" or msg == "easycyberfurry001" or msg == "easycyberfurry1":
@@ -288,7 +288,7 @@ def check_update():
                 logger.warning(f"[Hx_YinYing]:你可能需要重新启动nonebot来完成插件的重载")
 
 #载入本地保存的easycyber预设(一些情况下失败时不会清空，请找到专业人员修复)
-def easycyber_in(cybernick,json_1) -> str:
+def easycyber_in(cybernick=False,json_1=False) -> str:
     """
     载入本地保存的easycyber预设(一些情况下失败时不会清空，请找到专业人员修复)
     """
@@ -363,7 +363,7 @@ def easycyber_in(cybernick,json_1) -> str:
     return back
 
 #载入本地投稿的easycyber预设(载入失败会被清空
-def easycyber_in_tg(cybernick,json_1) -> str:
+def easycyber_in_tg(cybernick=False,json_1=False) -> str:
     """
     载入本地投稿的easycyber预设(载入失败会被清空
     """
@@ -433,7 +433,7 @@ def easycyber_in_tg(cybernick,json_1) -> str:
     return back
 
 #载入本地保存的cyber预设(一些情况下失败时不会清空，请找到专业人员修复)
-def cyber_in(cybernick,json_1) -> str:
+def cyber_in(cybernick=False,json_1=False) -> str:
     """
     载入本地保存的cyber预设(一些情况下失败时不会清空，请找到专业人员修复)
     """
@@ -502,7 +502,7 @@ def cyber_in(cybernick,json_1) -> str:
     return back
 
 #载入本地投稿的cyber预设(载入失败会被清空
-def cyber_in_tg(cybernick,json_1) -> str:
+def cyber_in_tg(cybernick=False,json_1=False) -> str:
     """
     载入本地投稿的cyber预设(载入失败会被清空
     """
@@ -615,7 +615,7 @@ def config_in_global() -> str:
     return back
 
 #载入群聊本地配置
-def config_in_group(groupid) -> str:
+def config_in_group(groupid=False) -> str:
     """
     载入群组本地配置，失败会重置
     """
@@ -658,14 +658,14 @@ def config_in_group(groupid) -> str:
     return back
 
 #载入个人本地配置
-def config_in_user(id,nick) -> str:
+def config_in_user(id=False,nick=False) -> str:
     """
     载入个人本地配置，失败会重置
     """
     dt = time.time()
     t = int(dt)
     id_package = {}
-    id_package['character'] = f"我是一只可爱的毛毛龙嗷呜"
+    id_package['character'] = f"一只可爱的毛毛龙"
     id_package['character_in'] = True
     id_package['easycharacter_in'] = True
     id_package['private_model'] = "yinyingllm-v2"
@@ -1364,16 +1364,16 @@ def process_model(model=None, id_config=None, group_config=None, id=None, nick=N
         packages_data['variables'] = allvariables
         packages_data['chatId'] = f'{hx_config.yinying_appid}-{id}-{times}-{model}'
         packages_data['message'] = text
-    elif model == "yinyingllm-v2" or model == "yinyingllm-v1" or model == "yinyingllm-v3":
+    elif model == "yinyingllm-v4" or model == "yinyingllm-v1" or model == "yinyingllm-v3":
         packages_data['chatId'] = f'{hx_config.yinying_appid}-{id}-{times}-{model}'
         packages_data['variables'] = allvariables
         packages_data['message'] = text
         if img:
             packages_data['multimodal'] = img
     else:
-        logger.warning(f"找不到{id}配置里的模型！将使用默认模型llm2")
-        packages_data['model'] = 'yinyingllm-v2'
-        packages_data['chatId'] = f'{hx_config.yinying_appid}-{id}-{times}-yinyingllm-v2'
+        logger.warning(f"找不到{id}配置里的模型！将使用默认模型llm4")
+        packages_data['model'] = 'yinyingllm-v4'
+        packages_data['chatId'] = f'{hx_config.yinying_appid}-{id}-{times}-yinyingllm-v4'
         packages_data['message'] = text
         packages_data['variables'] = allvariables
         if img:

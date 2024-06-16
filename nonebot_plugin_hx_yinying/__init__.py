@@ -35,6 +35,8 @@ __plugin_meta__ = PluginMetadata(
     },
 )
 
+
+#拉一坨大的😋
 #awa--------味大，无需多盐！
 logger.opt(colors=True).success( f"""
     <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>
@@ -65,7 +67,6 @@ if not hx_config.yinying_appid or not hx_config.yinying_token:
     logger.error("未设置核心配置？！,请检查你配置里的yinying_appid和yinying_token")
 else:
     scheduler.add_job(func=check_update,trigger='interval',hours=3,id="huanxin996")
-    logger.opt(colors=True).success(f"【Hx】定时检测更新启动。")
     logger.opt(colors=True).success("【Hx】加载核心配置成功,定时检测更新启动。")
 
 #检测更新
@@ -76,11 +77,10 @@ except Exception as e:
 
 #尝试检查错误模块
 if os.path.exists(f"{log_dir}/file/error_report/hx_error.html"):
-    logger.success("已加载错误报告模块")
+    logger.success("【Hx】已加载错误报告模块")
 else:
     logger.error("未找到错误报告模块的文件，尝试下载。。。")
     get_file()
-
 
 #根据订阅信息注册定时任务
 try:
@@ -113,12 +113,12 @@ history_get = on_command("导出对话", aliases={"getchat"},rule=Rule(chek_rule
 set_global_config = on_command("设置全局配置", aliases={"设置配置全局","globalset"},rule=Rule(chek_rule_admin),  priority=0, block=True)
 model_list = on_command("模型列表", aliases={"modellist","chat模型列表"},rule=Rule(chek_rule_base),  priority=0, block=True)
 model_handoff = on_command("切换模型", aliases={"qhmodel","切换chat模型","模型切换"},rule=Rule(chek_rule_base),  priority=0, block=True)
-easycyber_set = on_command("easycyber", aliases={"easycyber设置","hxworld"},rule=Rule(chek_rule_base),  priority=0, block=True)
-cyber_set = on_command("cyber", aliases={"cyber设置","Hxworld"},rule=Rule(chek_rule_base),  priority=0, block=True)
-admin_set = on_command("控制台操作", aliases={"管理控制台","setstart"},rule=Rule(chek_rule_admin),  priority=0, block=True)
-verision = on_command("确认版本", aliases={"旅行伙伴确认","版本确认"},rule=Rule(chek_rule_base),  priority=0, block=True)
-character = on_command("sd", aliases={"旅行伙伴加入","设定加入"},rule=Rule(chek_rule_base),  priority=0, block=True)
-chat_ne = on_command("加入订阅", aliases={"旅行伙伴觉醒","订阅加入"},rule=Rule(chek_rule_base),  priority=0, block=True)
+easycyber_set = on_command("easycyber", aliases={"easycyber设置","hxworld"},rule=Rule(chek_rule_base),  priority=10, block=True)
+cyber_set = on_command("cyber", aliases={"cyber设置","Hxworld"},rule=Rule(chek_rule_base),  priority=10, block=True)
+admin_set = on_command("控制台操作", aliases={"管理控制台","setstart"},rule=Rule(chek_rule_admin),  priority=1, block=True)
+verision = on_command("确认版本", aliases={"旅行伙伴确认","版本确认"},rule=Rule(chek_rule_base),  priority=9, block=True)
+character = on_command("sd", aliases={"旅行伙伴加入","设定加入"},rule=Rule(chek_rule_base),  priority=8, block=True)
+chat_ne = on_command("加入订阅", aliases={"旅行伙伴觉醒","订阅加入"},rule=Rule(chek_rule_base),  priority=15, block=True)
 time_noend = on_command("切换时间线", aliases={"切换模式"},rule=Rule(chek_rule_base),  priority=0, block=True)
 gloubalblack_add = on_command("全局拉黑", aliases={"银影不要理"},rule=Rule(chek_rule_admin),  priority=0, block=True)
 banword_add = on_command("添加违禁词", aliases={"banword","违禁词添加"},rule=Rule(chek_rule_admin),  priority=0, block=True)
@@ -515,7 +515,7 @@ async def history(bot: Bot, event: MessageEvent,events: Event):
 #获取模型列表
 @model_list.handle()
 async def list(matcher: Matcher, event: MessageEvent):
-        msg = "1.yinyingllm-v1\n2.yinyingllm-v2\n3.yinyingllm-v3\n4.cyberfurry-001\n5.easycyberfurry-001\n切换模型请发送:切换模型(序号)"
+        msg = "1.yinyingllm-v1\n2.yinyingllm-v3\n3.yinyingllm-v4\n4.cyberfurry-001\n5.easycyberfurry-001\n切换模型请发送:切换模型(序号)"
         await send_msg(matcher, event, msg)
 
 #模型切换方面
@@ -578,11 +578,15 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
         s["last"] = ""
     if s["last"]:
         if s["last"] == "增加":
+            if text == "" or not text:
+                s["last"] = "增加"
+                msg = "无效昵称"
+                await send_msg_reject(matcher,event,msg)
             if text == "Hx" or text == "HX" or text == "幻歆":
                 s["last"] = True
                 msg = "easycyber预设“Hx”不能删除或修改，如要改动请改源码"
                 await send_msg(matcher,event,msg)
-            elif text in easycyber_in_tg(text,False) or text in easycyber_in(text,False) or not text:
+            elif text in easycyber_in_tg() or text in easycyber_in():
                 s["last"] = "增加"
                 msg = "该预设角色名称已经存在，请不要重复使用该昵称，请重新输入，如需退出请发送退出"
                 await send_msg_reject(matcher,event,msg)
@@ -775,7 +779,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State,events: E
                 s["last"] = True
                 msg = "cyber预设“Hx”不能删除或修改，如要改动请改源码"
                 await send_msg(matcher,event,msg)
-            elif text in cyber_in_tg(text,False) or text in cyber_in(text,False):
+            elif text in cyber_in_tg() or text in cyber_in():
                 s["last"] = True
                 msg = "该预设角色名称已经存在，请不要重复使用该昵称."
                 await send_msg(matcher,event,msg)
@@ -924,14 +928,15 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State):
             if s["last"] == "通过":
                 msg = "请输入要通过的预设名称，如果不知道建议先get下列表"
                 if text == "easycyber":
-                    s["last"] == "easyber"
+                    s["last"] = "easyber"
                     await send_msg_reject(matcher,event,msg)
                 elif text == "cyber":
-                    s["last"] == "cyber"
+                    s["last"] = "cyber"
                     await send_msg_reject(matcher,event,msg)
 
             if s["last"] == "easyber":
-                json_1 = easycyber_in_tg(False,False)
+                s["last"] = True
+                json_1 = easycyber_in_tg()
                 json_data = json_get(json_1,text)
                 json_data["tg_admin"] = id
                 user = json_data["creator"]
@@ -939,35 +944,35 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State):
                 end_json = json_1.pop(f"{text}")
                 with open(f'{log_dir}/file/easycyber_tg.json','w',encoding='utf-8') as file:
                     json.dump(json_1,file)
-                    s["last"] = True
                     msg = f"[easycyber]已通过投稿用户为{user}关于角色{text}的投稿"
                 await send_msg(matcher,event,msg)
 
             if s["last"] == "cyber":
-                json_1 = cyber_in_tg(False,False)
+                s["last"] = True
+                json_1 = cyber_in_tg()
                 json_data = json_get(json_1,text)
+                logger.debug(json_data)
                 json_data["tg_admin"] = id
                 user = json_data["creator"]
                 in_ok = cyber_in(text,json_data)
                 end_json = json_1.pop(f"{text}")
                 with open(f'{log_dir}/file/cyber_tg.json','w',encoding='utf-8') as file:
                     json.dump(json_1,file)
-                    s["last"] = True
-                    msg = f"[cyber]已通过投稿用户为{user}关于角色{text}的投稿"
+                msg = f"[cyber]已通过投稿用户为{user}关于角色{text}的投稿"
                 await send_msg(matcher,event,msg)
 
             if s["last"] == "拒绝":
                 msg = "请输入要拒绝的预设名称，如果不知道建议先get下列表"
                 if text == "easycyber":
-                    s["last"] == "badeasyber"
+                    s["last"] = "badeasyber"
                     await send_msg_reject(matcher,event,msg)
                 elif text == "cyber":
-                    s["last"] == "badcyber"
+                    s["last"] = "badcyber"
                     await send_msg_reject(matcher,event,msg)
             
             if s["last"] == "badeasyber":
                 s["last"] = True
-                json_1 = easycyber_in_tg(False,False)
+                json_1 = easycyber_in_tg()
                 json_data = json_get(json_1,text)
                 user = json_data["creator"]
                 end_json = json_1.pop(f"{text}")
@@ -978,7 +983,7 @@ async def _(matcher: Matcher, bot:Bot, event: MessageEvent, s: T_State):
 
             if s["last"] == "badcyber":
                 s["last"] = True
-                json_1 = cyber_in_tg(False,False)
+                json_1 = cyber_in_tg()
                 json_data = json_get(json_1,text)
                 user = json_data["creator"]
                 end_json = json_1.pop(f"{text}")
