@@ -36,7 +36,7 @@ __plugin_meta__ = PluginMetadata(
     },
 )
 
-#在这里拉一坨大的😋
+#在这里拉一坨大的
 #awa--------味大，无需多盐！
 logger.opt(colors=True).success( f"""
     <fg #60F5F5>                   ------------------<Y>幻歆v{hx_config.hx_version}</Y>----------------</fg #60F5F5>

@@ -12,7 +12,6 @@ from nonebot.adapters.onebot.v11 import (
 )
 from .config import Config
 
-##由星佑的oops修改而来
 hx_config = get_plugin_config(Config)
 
 if hx_config.hx_path == None:
