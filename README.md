@@ -14,7 +14,7 @@
 <!-- markdownlint-disable MD033 MD036 MD041 -->
 
 <p align="center">
-  <a href="https://huanxinbot.com/"><img src="https://github.com/huanxin996/nonebot_plugin_hx-yinying/tree/main/.venv/hx_img.png" width="200" height="200" alt="nonebot"></a>
+  <a href="https://huanxinbot.com/"><img src="https://raw.githubusercontent.com/huanxin996/nonebot_plugin_hx-yinying/main/.venv/hx_img.png" width="200" height="200" alt="nonebot"></a>
 </p>
 
 <div align="center">
@@ -30,7 +30,7 @@ _✨ Hx vs YinYing(在线与银影进行对话的插件) ✨_
     <img src="https://img.shields.io/github/license/cscs181/QQ-Github-Bot.svg" alt="license">
   </a>
   <a href="https://pypi.python.org/pypi/nonebot-plugin-hx-yinying">
-    <img src="https://img.shields.io/pypi/v/nonebot-plugin-hx-yinying
+    <img src="https://raw.githubusercontent.com/huanxin996/nonebot_plugin_hx-yinying/main/.venv/nonebot-plugin-hx-yinying.svg
     " alt="pypi">
   </a>
   <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="python">
