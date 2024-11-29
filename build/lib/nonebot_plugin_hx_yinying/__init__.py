@@ -88,8 +88,8 @@ try:
     for key in dy_list:
         config_1 = config_in_user(key,False)
         user_config = json_get(config_1,key)
-        config_time = json_get(user_config,"dy_time","6")
-        config_minute = json_get(user_config,"dy_minute","0")
+        config_time = json_get(user_config,"dy_time",default=6)
+        config_minute = json_get(user_config,"dy_minute",default=0)
         scheduler.add_job(func=get_chat,trigger='interval',args=[key] ,hours=config_time, minutes=config_minute, id=key)
     logger.opt(colors=True).success(f"【Hx】定时任务加载成功,当前共加载{extent}个订阅用户")
 except Exception as e:
@@ -354,7 +354,7 @@ async def set_global(matcher: Matcher, bot:Bot, event: MessageEvent,events: Even
     if s["last"]:
         if s["last"] == "查看":
             config = config_in_global()
-            get_config = await json_get(config,text,"2")
+            get_config = await json_get(config,text,default=2)
             if get_config == 2:
                 s["last"] = True
                 msg = f"无法查找到该配置项！，请检查其是否为正确的配置名{text}"

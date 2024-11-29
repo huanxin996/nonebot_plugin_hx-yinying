@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\mcxia\Desktop\幻歆的项目\nonebot_plugin_hx-yinying\.venv
+set VIRTUAL_ENV=c:\Users\mcxia\Desktop\幻歆的项目\nonebot_plugin_hx-yinying\.venv
 
 if not defined PROMPT set PROMPT=$P$G
 

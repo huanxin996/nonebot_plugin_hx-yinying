@@ -38,7 +38,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="C:\Users\mcxia\Desktop\幻歆的项目\nonebot_plugin_hx-yinying\.venv"
+VIRTUAL_ENV="c:\Users\mcxia\Desktop\幻歆的项目\nonebot_plugin_hx-yinying\.venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"

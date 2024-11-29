@@ -16,17 +16,8 @@ __all__ = [
     'install_scripts',
     'install_data',
     'sdist',
-    'register',
     'bdist',
     'bdist_dumb',
     'bdist_rpm',
-    'bdist_wininst',
     'check',
-    'upload',
-    # These two are reserved for future use:
-    #'bdist_sdux',
-    #'bdist_pkgtool',
-    # Note:
-    # bdist_packager is not included because it only provides
-    # an abstract base class
 ]

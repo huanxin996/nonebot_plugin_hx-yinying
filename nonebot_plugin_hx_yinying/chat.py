@@ -39,7 +39,7 @@ def path_in() -> str:
     return log_dir
 
 
-#判断配置文件夹是否存在！
+#判断主要配置文件夹是否存在！
 log_dir = path_in()
 
 def config_in_global() -> str:

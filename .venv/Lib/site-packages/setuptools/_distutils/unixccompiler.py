@@ -13,14 +13,21 @@ the "typical" Unix-style command-line C compiler:
   * link shared library handled by 'cc -shared'
 """
 
-import os, sys, re, shlex
+from __future__ import annotations
 
-from distutils import sysconfig
-from distutils.dep_util import newer
-from distutils.ccompiler import CCompiler, gen_preprocess_options, gen_lib_options
-from distutils.errors import DistutilsExecError, CompileError, LibError, LinkError
-from distutils import log
+import itertools
+import os
+import re
+import shlex
+import sys
+
+from . import sysconfig
+from ._log import log
 from ._macos_compat import compiler_fixup
+from ._modified import newer
+from .ccompiler import CCompiler, gen_lib_options, gen_preprocess_options
+from .compat import consolidate_linker_args
+from .errors import CompileError, DistutilsExecError, LibError, LinkError
 
 # XXX Things not currently handled:
 #   * optimization/debug/warning flags; we just use whatever's in Python's
@@ -99,7 +106,6 @@ def _linker_params(linker_cmd, compiler_cmd):
 
 
 class UnixCCompiler(CCompiler):
-
     compiler_type = 'unix'
 
     # These are used by CCompiler in two places: the constructor sets
@@ -112,9 +118,12 @@ class UnixCCompiler(CCompiler):
         'preprocessor': None,
         'compiler': ["cc"],
         'compiler_so': ["cc"],
-        'compiler_cxx': ["cc"],
+        'compiler_cxx': ["c++"],
+        'compiler_so_cxx': ["c++"],
         'linker_so': ["cc", "-shared"],
+        'linker_so_cxx': ["c++", "-shared"],
         'linker_exe': ["cc"],
+        'linker_exe_cxx': ["c++", "-shared"],
         'archiver': ["ar", "-cr"],
         'ranlib': None,
     }
@@ -138,6 +147,9 @@ class UnixCCompiler(CCompiler):
     xcode_stub_lib_format = dylib_lib_format
     if sys.platform == "cygwin":
         exe_extension = ".exe"
+        shared_lib_extension = ".dll.a"
+        dylib_lib_extension = ".dll"
+        dylib_lib_format = "cyg%s%s"
 
     def preprocess(
         self,
@@ -160,27 +172,37 @@ class UnixCCompiler(CCompiler):
             pp_args.extend(extra_postargs)
         pp_args.append(source)
 
-        # We need to preprocess: either we're being forced to, or we're
-        # generating output to stdout, or there's a target output file and
-        # the source file is newer than the target (or the target doesn't
-        # exist).
-        if self.force or output_file is None or newer(source, output_file):
-            if output_file:
-                self.mkpath(os.path.dirname(output_file))
-            try:
-                self.spawn(pp_args)
-            except DistutilsExecError as msg:
-                raise CompileError(msg)
+        # reasons to preprocess:
+        # - force is indicated
+        # - output is directed to stdout
+        # - source file is newer than the target
+        preprocess = self.force or output_file is None or newer(source, output_file)
+        if not preprocess:
+            return
+
+        if output_file:
+            self.mkpath(os.path.dirname(output_file))
+
+        try:
+            self.spawn(pp_args)
+        except DistutilsExecError as msg:
+            raise CompileError(msg)
 
     def _compile(self, obj, src, ext, cc_args, extra_postargs, pp_opts):
         compiler_so = compiler_fixup(self.compiler_so, cc_args + extra_postargs)
+        compiler_so_cxx = compiler_fixup(self.compiler_so_cxx, cc_args + extra_postargs)
         try:
-            self.spawn(compiler_so + cc_args + [src, '-o', obj] + extra_postargs)
+            if self.detect_language(src) == 'c++':
+                self.spawn(
+                    compiler_so_cxx + cc_args + [src, '-o', obj] + extra_postargs
+                )
+            else:
+                self.spawn(compiler_so + cc_args + [src, '-o', obj] + extra_postargs)
         except DistutilsExecError as msg:
             raise CompileError(msg)
 
     def create_static_lib(
-        self, objects, output_libname, output_dir=None, debug=0, target_lang=None
+        self, objects, output_libname, output_dir=None, debug=False, target_lang=None
     ):
         objects, output_dir = self._fix_object_args(objects, output_dir)
 
@@ -213,7 +235,7 @@ class UnixCCompiler(CCompiler):
         library_dirs=None,
         runtime_library_dirs=None,
         export_symbols=None,
-        debug=0,
+        debug=False,
         extra_preargs=None,
         extra_postargs=None,
         build_temp=None,
@@ -243,7 +265,13 @@ class UnixCCompiler(CCompiler):
                 # building an executable or linker_so (with shared options)
                 # when building a shared library.
                 building_exe = target_desc == CCompiler.EXECUTABLE
-                linker = (self.linker_exe if building_exe else self.linker_so)[:]
+                linker = (
+                    self.linker_exe
+                    if building_exe
+                    else (
+                        self.linker_so_cxx if target_lang == "c++" else self.linker_so
+                    )
+                )[:]
 
                 if target_lang == "c++" and self.compiler_cxx:
                     env, linker_ne = _split_env(linker)
@@ -274,10 +302,9 @@ class UnixCCompiler(CCompiler):
         compiler = os.path.basename(shlex.split(cc_var)[0])
         return "gcc" in compiler or "g++" in compiler
 
-    def runtime_library_dir_option(self, dir):
+    def runtime_library_dir_option(self, dir: str) -> str | list[str]:
         # XXX Hackish, at the very least.  See Python bug #445902:
-        # http://sourceforge.net/tracker/index.php
-        #   ?func=detail&aid=445902&group_id=5470&atid=105470
+        # https://bugs.python.org/issue445902
         # Linkers on different platforms need different options to
         # specify that directories need to be added to the list of
         # directories searched for dependencies when a dynamic library
@@ -304,79 +331,72 @@ class UnixCCompiler(CCompiler):
                 "-L" + dir,
             ]
 
-        # For all compilers, `-Wl` is the presumed way to
-        # pass a compiler option to the linker and `-R` is
-        # the way to pass an RPATH.
+        # For all compilers, `-Wl` is the presumed way to pass a
+        # compiler option to the linker
         if sysconfig.get_config_var("GNULD") == "yes":
-            # GNU ld needs an extra option to get a RUNPATH
-            # instead of just an RPATH.
-            return "-Wl,--enable-new-dtags,-R" + dir
+            return consolidate_linker_args([
+                # Force RUNPATH instead of RPATH
+                "-Wl,--enable-new-dtags",
+                "-Wl,-rpath," + dir,
+            ])
         else:
             return "-Wl,-R" + dir
 
     def library_option(self, lib):
         return "-l" + lib
 
-    def find_library_file(self, dirs, lib, debug=0):
-        shared_f = self.library_filename(lib, lib_type='shared')
-        dylib_f = self.library_filename(lib, lib_type='dylib')
-        xcode_stub_f = self.library_filename(lib, lib_type='xcode_stub')
-        static_f = self.library_filename(lib, lib_type='static')
+    @staticmethod
+    def _library_root(dir):
+        """
+        macOS users can specify an alternate SDK using'-isysroot'.
+        Calculate the SDK root if it is specified.
 
-        if sys.platform == 'darwin':
-            # On OSX users can specify an alternate SDK using
-            # '-isysroot', calculate the SDK root if it is specified
-            # (and use it further on)
-            #
-            # Note that, as of Xcode 7, Apple SDKs may contain textual stub
-            # libraries with .tbd extensions rather than the normal .dylib
-            # shared libraries installed in /.  The Apple compiler tool
-            # chain handles this transparently but it can cause problems
-            # for programs that are being built with an SDK and searching
-            # for specific libraries.  Callers of find_library_file need to
-            # keep in mind that the base filename of the returned SDK library
-            # file might have a different extension from that of the library
-            # file installed on the running system, for example:
-            #   /Applications/Xcode.app/Contents/Developer/Platforms/
-            #       MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/
-            #       usr/lib/libedit.tbd
-            # vs
-            #   /usr/lib/libedit.dylib
-            cflags = sysconfig.get_config_var('CFLAGS')
-            m = re.search(r'-isysroot\s*(\S+)', cflags)
-            if m is None:
-                sysroot = '/'
-            else:
-                sysroot = m.group(1)
+        Note that, as of Xcode 7, Apple SDKs may contain textual stub
+        libraries with .tbd extensions rather than the normal .dylib
+        shared libraries installed in /.  The Apple compiler tool
+        chain handles this transparently but it can cause problems
+        for programs that are being built with an SDK and searching
+        for specific libraries.  Callers of find_library_file need to
+        keep in mind that the base filename of the returned SDK library
+        file might have a different extension from that of the library
+        file installed on the running system, for example:
+          /Applications/Xcode.app/Contents/Developer/Platforms/
+              MacOSX.platform/Developer/SDKs/MacOSX10.11.sdk/
+              usr/lib/libedit.tbd
+        vs
+          /usr/lib/libedit.dylib
+        """
+        cflags = sysconfig.get_config_var('CFLAGS')
+        match = re.search(r'-isysroot\s*(\S+)', cflags)
 
-        for dir in dirs:
-            shared = os.path.join(dir, shared_f)
-            dylib = os.path.join(dir, dylib_f)
-            static = os.path.join(dir, static_f)
-            xcode_stub = os.path.join(dir, xcode_stub_f)
-
-            if sys.platform == 'darwin' and (
+        apply_root = (
+            sys.platform == 'darwin'
+            and match
+            and (
                 dir.startswith('/System/')
                 or (dir.startswith('/usr/') and not dir.startswith('/usr/local/'))
-            ):
+            )
+        )
 
-                shared = os.path.join(sysroot, dir[1:], shared_f)
-                dylib = os.path.join(sysroot, dir[1:], dylib_f)
-                static = os.path.join(sysroot, dir[1:], static_f)
-                xcode_stub = os.path.join(sysroot, dir[1:], xcode_stub_f)
+        return os.path.join(match.group(1), dir[1:]) if apply_root else dir
 
-            # We're second-guessing the linker here, with not much hard
-            # data to go on: GCC seems to prefer the shared library, so I'm
-            # assuming that *all* Unix C compilers do.  And of course I'm
-            # ignoring even GCC's "-static" option.  So sue me.
-            if os.path.exists(dylib):
-                return dylib
-            elif os.path.exists(xcode_stub):
-                return xcode_stub
-            elif os.path.exists(shared):
-                return shared
-            elif os.path.exists(static):
-                return static
+    def find_library_file(self, dirs, lib, debug=False):
+        """
+        Second-guess the linker with not much hard
+        data to go on: GCC seems to prefer the shared library, so
+        assume that *all* Unix C compilers do,
+        ignoring even GCC's "-static" option.
+        """
+        lib_names = (
+            self.library_filename(lib, lib_type=type)
+            for type in 'dylib xcode_stub shared static'.split()
+        )
 
-        # Oops, didn't find it in *any* of 'dirs'
-        return None
+        roots = map(self._library_root, dirs)
+
+        searched = itertools.starmap(os.path.join, itertools.product(roots, lib_names))
+
+        found = filter(os.path.exists, searched)
+
+        # Return None if it could not be found in any dir.
+        return next(found, None)
