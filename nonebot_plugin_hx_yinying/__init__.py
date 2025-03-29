@@ -1,6 +1,7 @@
 from nonebot.log import logger
 from nonebot.plugin import PluginMetadata
 from nonebot import on_command, on_message ,get_plugin_config,require
+require("nonebot_plugin_apscheduler")
 from nonebot_plugin_apscheduler import scheduler
 from nonebot.params import CommandArg
 require("nonebot_plugin_localstore")
