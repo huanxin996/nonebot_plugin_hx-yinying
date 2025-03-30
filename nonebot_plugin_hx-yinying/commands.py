@@ -37,12 +37,14 @@ config_cmd = on_alconna(
                 "blacklist",
                 Option("add", Args["user_id", str], help_text="添加用户到黑名单"),
                 Option("remove", Args["user_id", str], help_text="从黑名单移除用户"),
+                Option("list", help_text="查看黑名单列表"),
                 help_text="黑名单管理"
             ),
             Subcommand(
                 "banword",
                 Option("add", Args["word", str], help_text="添加违禁词"),
                 Option("remove", Args["word", str], help_text="移除违禁词"),
+                Option("list", help_text="查看违禁词列表"),
                 help_text="违禁词管理"
             ),
             help_text="管理员功能"
@@ -96,7 +98,7 @@ async def handle_chat(arp: Arparma, target: MsgTarget,
             
     # 处理 text 
     if text_opt := arp.options.get("text"):
-        if content := text_opt.value("content"):
+        if content := text_opt.args.get("content"):
             await send_message(target, content)
             return
 
@@ -145,6 +147,8 @@ async def handle_config(arp: Arparma, target: MsgTarget,
             elif remove_opt := blacklist.options.get("remove"):
                 user_id = remove_opt.args.get("user_id")
                 await handle_blacklist(target, "remove", user_id)
+            elif list_opt := blacklist.options.get("list"):
+                await handle_blacklist(target, "list")
             return
 
         # 违禁词管理
@@ -152,7 +156,9 @@ async def handle_config(arp: Arparma, target: MsgTarget,
             if add_opt := banword.options.get("add"):
                 word = add_opt.value["word"]
                 await handle_banword(target, "add", word)
-            elif remove_opt := banword.find("remove"):
-                word = remove_opt.value["word"]
+            elif remove_opt := banword.options.get("remove"):
+                word = remove_opt.args.get["word"]
                 await handle_banword(target, "remove", word)
+            elif list_opt := banword.options.get("list"):
+                await handle_banword(target, "list")
             return
