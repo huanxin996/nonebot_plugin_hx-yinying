@@ -5,9 +5,10 @@ from nonebot_plugin_alconna.uniseg import UniMessage,MsgTarget
 from nonebot.adapters import Event
 from nonebot.log import logger
 from typing import Optional
-from ..configs.spconfig import GlobalConfig,UserConfig
+from ..configs.spconfig import GlobalConfig,UserConfig,GroupConfig
 from .logs import ChatLogs
 from ..api.methods import get_chat_response
+from ..api.model import YinYingModelType
 
 
 
@@ -181,16 +182,16 @@ async def handle_banword(target: MsgTarget, action: str, word: str):
 
 async def show_help(target: MsgTarget):
     """显示帮助信息"""
-    help_text = """小狼聊天助手
+    help_text = """
     基础指令：
     - yinying <内容>: 直接对话
-    - yinying --text <内容>: 发送消息
-    - yinying --help: 显示此帮助
+    - yinying text <内容>: 发送消息
+    - yinying help: 显示此帮助
     
     其他功能请使用：
-    yinying.model --help: 模型管理
-    yinying.char --help: 角色管理
-    yinying.config --help: 系统设置"""
+    yinying.model help: 模型管理
+    yinying.char help: 角色管理
+    yinying.config help: 系统设置"""
     await send_message(target, help_text)
 
 async def show_config_global(target: MsgTarget) -> None:
@@ -265,3 +266,40 @@ async def get_chat(event:Event,message:str,targer:MsgTarget, user_info:UserInfo 
     logger.debug(f"群号：{group_id}用户 {user_id} 发送消息: {message}")
     back_msg = await get_chat_response(group_id,user_id,user_info.user_name,messages)
     await send_message(targer, back_msg,True)
+
+def get_model_list() -> str:
+    """获取模型列表"""
+    model_list = [model.value for model in YinYingModelType]
+    return "\n".join(f"- {model}" for model in model_list)
+
+async def switch_model(event: Event, model: str, user_info: UserInfo = EventUserInfo()) -> str:
+    """切换对话模型"""
+    try:
+        valid_models = [m.value for m in YinYingModelType]
+        if model not in valid_models:
+            return f"[错误] 无效的模型名称: {model}\n可用模型:\n{get_model_list()}"
+        user_id = str(user_info.user_id)
+        is_group, group_id = get_group_id(event)
+        if is_group:
+            if not await check_admin_permission(user_info):
+                return "[错误] 群聊切换模型需要管理员权限"
+            group_config = GroupConfig.load()
+            group_settings = group_config.get_group(group_id)
+            if not group_settings:
+                return f"[错误] 未找到群组 {group_id} 的配置"
+            old_model = group_settings.use_model
+            group_config.update_group(group_id=group_id, use_model=model)
+            return f"[成功] 群组模型已切换: {old_model} -> {model}"
+        else:
+            # 私聊模式
+            user_config = UserConfig.load()
+            user_settings = user_config.get_user(user_id, user_info.user_name)
+            if not user_settings:
+                return f"[错误] 未找到用户 {user_id} 的配置"
+            old_model = user_settings.private_model
+            user_config.update_user(user_id=user_id,private_model=model)
+            return f"[成功] 个人模型已切换: {old_model} -> {model}"
+            
+    except Exception as e:
+        logger.error(f"切换模型失败: {e}", exc_info=True)
+        return False

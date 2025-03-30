@@ -7,6 +7,7 @@ from nonebot_plugin_alconna.uniseg import UniMessage,MsgTarget
 from .utils.methods import *
 from .utils.logs import ChatLogs
 
+
 chat = on_message(rule=to_me()&Rule(check_permission),priority=15, block=True)
 
 # 基础命令
@@ -206,3 +207,34 @@ async def handle_config(bot:Bot,arp: Arparma, target: MsgTarget,
                     ).send(target)
             return
 
+@model_cmd.handle()
+async def handle_model(event:Event,arp: Arparma, target: MsgTarget,
+                     user_info: UserInfo = EventUserInfo()):
+    """处理角色命令"""
+    if not await check_permission(event, user_info):
+        await send_message(target, "[错误] 权限不足")
+        return
+    # 显示帮助
+    if arp.find("help"):
+        await send_message(target, "[模型] 帮助:\nyinying.model list\n"
+        "yinying.model switch <模型名称>\n",True)
+    elif arp.find("list"):
+        await send_message(target, f"模型列表：\n{get_model_list()}",True)
+    elif models := arp.options.get("switch"):
+        model = models.args.get("name")
+        if model:
+            msg = await switch_model(event,model,user_info)
+            await send_message(target, msg,True)
+        else:
+            await send_message(target, "[错误] 请指定模型名称")
+
+@char_cmd.handle()
+async def handle_char(event:Event,arp: Arparma, target: MsgTarget,
+                     user_info: UserInfo = EventUserInfo()):
+    """处理角色命令"""
+    if not await check_permission(event, user_info):
+        await send_message(target, "[错误] 权限不足")
+        return
+    # 显示帮助
+    if arp.find("help"):
+        await send_message(target, f"[角色] 帮助:\nyinying.char add <角色名称>\nyinying.char subscribe\n")

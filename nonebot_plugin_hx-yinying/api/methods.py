@@ -277,6 +277,7 @@ def process_model(
                         cf_story=prompt.cf_story
                     )
         message.chat_id = f"{hxconfigs.yinying_appid}-{user_id}-{times}-{model}"
+        logger.debug(f"[Hx]:处理模型请求: {message.to_dict()}")
         return message.to_dict()
         
     except Exception as e:
@@ -334,6 +335,7 @@ async def data_in(
                 text=text,
                 times=user_settings.time
             )
+        logger.debug(f"[Hx]:构建API请求数据: {packages_data}")
         return packages_data
     except Exception as e:
         logger.error(f"构建API请求数据失败: {e}", exc_info=True)
@@ -370,6 +372,7 @@ async def get_chat_response(
         if not response:
             logger.error("API请求失败")
             return None
+        logger.debug(f"[Hx]:API返回数据: {_truncate_log(response,max_length=50)}")
         back_msg = await yinying_back(
             back=response,
             group_id=group_id,
