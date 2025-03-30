@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict,Union,Any
 from .globalvar import GlobalVars,logger,time
 
 
@@ -112,6 +112,29 @@ class CyberManager:
         except Exception as e:
             logger.error(f"保存赛博角色配置失败: {e}")
 
+    def get_character(self, identifier: Union[str, int]) -> Optional[CyberCharacter]:
+        """根据角色名称或ID获取角色配置"""
+        if isinstance(identifier, str):
+            return self.characters.get(identifier)
+            
+        for char in self.characters.values():
+            if char.id == identifier:
+                return char
+        return None
+    
+    def get_character_info(self, identifier: Union[str, int]) -> Optional[Dict[str, Any]]:
+        """获取角色详细信息"""
+        if char := self.get_character(identifier):
+            return {
+                "id": char.id,
+                "creator": char.creator,
+                "create_time": char.create_time,
+                "last_update": char.last_update,
+                "public": char.public,
+                "system_prompt_length": len(char.system_prompt),
+                "has_xml": bool(char.xml_data)
+            }
+        return None
 
 @dataclass
 class CyberContribution(CyberCharacter):

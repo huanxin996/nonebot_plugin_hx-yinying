@@ -4,8 +4,8 @@ from nonebot import require
 from nonebot.plugin import PluginMetadata,inherit_supported_adapters
 require("nonebot_plugin_userinfo")
 require("nonebot_plugin_alconna")
-from .config import Config,configs
-from .api import check_update
+from .config import Config,hxconfigs
+from .api.methods import check_update
 
 __plugin_meta__ = PluginMetadata(
     name="Hx_YinYing",
@@ -22,7 +22,7 @@ __plugin_meta__ = PluginMetadata(
     supported_adapters=inherit_supported_adapters("nonebot_plugin_alconna","nonebot_plugin_userinfo"),
 )
 
-if not configs.localstore_use_cwd:
+if not hxconfigs.localstore_use_cwd:
     logger.warning("由于localstore_use_cwd为False,本地数据插件使用默认路径存储数据，但是本人十分不建议这样做，所以本插件拒绝被加载，请在配置文件中修改localstore_use_cwd为True后重启nonebot")
     raise Exception("Hx_YinYing插件被拒绝被加载")
 

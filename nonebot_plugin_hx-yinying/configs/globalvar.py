@@ -2,9 +2,9 @@ import json,os,time
 from pathlib import Path
 from typing import Dict, Any, Optional
 from nonebot.log import logger
-from .config import configs
+from ..config import hxconfigs
 
-current_dir = configs.plugin_cache_dir if configs.localstore_use_cwd else Path.cwd()
+current_dir = hxconfigs.plugin_cache_dir if hxconfigs.localstore_use_cwd else Path.cwd()
 plugin_config_dir = current_dir / "data"
 if not os.path.exists(plugin_config_dir):
     os.makedirs(plugin_config_dir)

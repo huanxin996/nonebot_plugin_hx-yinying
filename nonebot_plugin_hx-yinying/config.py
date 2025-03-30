@@ -1,7 +1,7 @@
 __author__ = "HuanXin"
 
 import nonebot
-from typing import Optional, Set
+from typing import Optional, Set, Any
 from pydantic import BaseModel
 from nonebot import get_plugin_config,require
 from pathlib import Path
@@ -20,5 +20,12 @@ class Config(BaseModel):
     localstore_use_cwd : Optional[bool] = True
     plugin_cache_dir: Path = store.get_plugin_cache_dir()
 
+class ConfigItem(BaseModel):
+    """配置项定义"""
+    key: str
+    name: str
+    value: Any
+    description: Optional[str] = None
+
 global_config = nonebot.get_driver().config
-configs = get_plugin_config(Config)
+hxconfigs = get_plugin_config(Config)

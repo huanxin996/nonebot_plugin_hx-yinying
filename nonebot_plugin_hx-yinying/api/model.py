@@ -1,7 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass
 from typing import Dict, Optional
-from .config import configs
+from ..config import hxconfigs
 
 class YinYingModelType(Enum):
     """模型类型枚举"""
@@ -39,7 +39,7 @@ class CharacterSet:
 
 @dataclass
 class YinYingMessage:
-    """音音消息基础类"""
+    """消息基础类"""
     app_id: str
     message: str
     model: YinYingModelType
@@ -68,14 +68,14 @@ class YinYingMessage:
         if self.nick_name:
             variables["nickName"] = self.nick_name
             
-        if self.model == YinYingModelType.EASYCYBERFURRY:
-            if self.furry_character:
-                variables["furryCharacter"] = self.furry_character
+        if self.furry_character:
+            variables["furryCharacter"] = self.furry_character
                 
-        if self.model == YinYingModelType.V2 and self.prompt_patch:
-            variables["promptPatch"] = self.prompt_patch
-        elif self.model == YinYingModelType.CYBERFURRY and self.prompt_patch:
-            variables["prompt"] = self.prompt_patch
+        if self.prompt_patch:
+            if self.model == YinYingModelType.V2:
+                variables["promptPatch"] = self.prompt_patch
+            elif self.model == YinYingModelType.CYBERFURRY:
+                variables["prompt"] = self.prompt_patch
             
         if variables:
             data["variables"] = variables
@@ -83,7 +83,7 @@ class YinYingMessage:
         if self.model == YinYingModelType.EASYCYBERFURRY and self.character_set:
             if char_data := self.character_set.to_dict():
                 data["characterSet"] = char_data
-                
+
         return data
     
     @classmethod
@@ -91,20 +91,32 @@ class YinYingMessage:
                message: str,
                user_id: str,
                model: YinYingModelType = YinYingModelType.V3,
-               app_id: str = configs.yinying_appid,
+               app_id: str = hxconfigs.yinying_appid,
                nick_name: Optional[str] = None,
                furry_character: Optional[str] = None,
                prompt_patch: Optional[str] = None,
-               character_set: Optional[CharacterSet] = None) -> "YinYingMessage":
+               character_set: Optional[CharacterSet] = None,
+               chat_id: Optional[str] = None) -> "YinYingMessage":
         """创建消息实例的便捷方法"""
-        return cls(
-            app_id=app_id,
-            message=message,
-            model=model,
-            user_id=user_id,
-            nick_name=nick_name,
-            furry_character=furry_character,
-            prompt_patch=prompt_patch,
-            character_set=character_set
-        )
+        params = {
+            "app_id": app_id,
+            "message": message,
+            "model": model,
+            "user_id": user_id,
+            "chat_id": chat_id or f"{app_id}-{user_id}"
+        }
+        
+        optional_params = {
+            "nick_name": nick_name,
+            "furry_character": furry_character,
+            "prompt_patch": prompt_patch,
+            "character_set": character_set
+        }
+        
+        params.update({
+            k: v for k, v in optional_params.items() 
+            if v is not None
+        })
+        
+        return cls(**params)
 

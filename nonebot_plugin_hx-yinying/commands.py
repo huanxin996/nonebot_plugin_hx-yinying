@@ -1,13 +1,13 @@
-from nonebot.log import logger
 from nonebot import on_message
-from nonebot.rule import to_me
-from nonebot.adapters import Event
+from nonebot.rule import to_me,Rule
+from nonebot.adapters import Event,Bot
 from nonebot_plugin_userinfo import EventUserInfo, UserInfo
 from nonebot_plugin_alconna import on_alconna,Alconna, Args, Option,Arparma,Subcommand
 from nonebot_plugin_alconna.uniseg import UniMessage,MsgTarget
-from .utils import *
+from .utils.methods import *
+from .utils.logs import ChatLogs
 
-chat = on_message(rule=to_me(),priority=15, block=True)
+chat = on_message(rule=to_me()&Rule(check_permission),priority=15, block=True)
 
 # 基础命令
 chat_cmd = on_alconna(
@@ -27,9 +27,10 @@ config_cmd = on_alconna(
         Option("help", help_text="显示设置帮助"),
         # 基础配置
         Option("global", 
-            Args.key[str] + Args.value[str],  # 修改这里，使用加号连接两个参数
+            Args.key[str] + Args.value[str],
             help_text="全局配置设置"
         ),
+        Option("list", help_text="设置项列表"),
         # 管理员功能
         Subcommand(
             "admin",
@@ -46,6 +47,13 @@ config_cmd = on_alconna(
                 Option("remove", Args["word", str], help_text="移除违禁词"),
                 Option("list", help_text="查看违禁词列表"),
                 help_text="违禁词管理"
+            ),
+            Subcommand(
+                "cache",
+                Option("add", Args["content", str], help_text="添加测试缓存"),
+                Option("clear", help_text="清空缓存"),
+                Option("list", Args["type?", str], help_text="显示缓存"),
+                help_text="缓存管理"  
             ),
             help_text="管理员功能"
         )
@@ -77,15 +85,19 @@ char_cmd = on_alconna(
 
 @chat.handle()
 async def handle_chat_message(event:Event,target: MsgTarget,user_info: UserInfo = EventUserInfo()):
-    user_id = user_info.user_id
-    session_id = event.get_session_id()
+    if not await check_permission(event, user_info):
+        await send_message(target, "[错误] 权限不足")
+        return
     message = event.get_plaintext()
-    await send_message(target, f"正在处理...{message}")
+    await get_chat(event, message, target, user_info)
 
 @chat_cmd.handle()
-async def handle_chat(arp: Arparma, target: MsgTarget, 
+async def handle_chat(event:Event,arp: Arparma, target: MsgTarget, 
                      user_info: UserInfo = EventUserInfo()):
     """处理基础对话"""
+    if not await check_permission(event, user_info):
+        await send_message(target, "[错误] 权限不足")
+        return
     # 处理帮助指令
     if arp.find("help"):
         await show_help(target)
@@ -93,24 +105,28 @@ async def handle_chat(arp: Arparma, target: MsgTarget,
         
     # 处理直接对话内容
     if content := arp.main_args.get("content"):
-        await send_message(target, content)
+        await get_chat(event, content, target, user_info)
         return
             
     # 处理 text 
     if text_opt := arp.options.get("text"):
         if content := text_opt.args.get("content"):
-            await send_message(target, content)
+            await get_chat(event, content, target, user_info)
             return
 
 @config_cmd.handle()
-async def handle_config(arp: Arparma, target: MsgTarget,
+async def handle_config(bot:Bot,arp: Arparma, target: MsgTarget,
                        user_info: UserInfo = EventUserInfo()):
     """处理配置命令"""
+    if not await check_admin_permission(user_info):
+        await UniMessage.text("[错误] 需要管理员权限").send(target)
+        return
     # 显示帮助
     if arp.find("help"):
         await show_config_help(target)
         return
-    
+    if arp.find("list"):
+        await show_config_global(target)
     # 全局配置
     elif options := arp.options.get("global"):
         key = options.args.get("key")
@@ -134,10 +150,6 @@ async def handle_config(arp: Arparma, target: MsgTarget,
         
     # 管理员功能
     elif admin := arp.subcommands.get("admin"):
-        # 权限检查
-        if not await check_admin_permission(user_info):
-            await UniMessage.text("[错误] 需要管理员权限").send(target)
-            return
 
         # 黑名单管理
         if blacklist := admin.subcommands.get("blacklist"):
@@ -162,3 +174,35 @@ async def handle_config(arp: Arparma, target: MsgTarget,
             elif list_opt := banword.options.get("list"):
                 await handle_banword(target, "list")
             return
+        
+        # 缓存管理
+        elif cache := admin.subcommands.get("cache"):
+            user_id = str(user_info.user_id)
+            
+            if add_opt := cache.options.get("add"):
+                content = add_opt.args.get("content")
+                chat_logs = ChatLogs.load() 
+                chat_logs.add_log(user_id, "test", content)
+                await UniMessage.text(f"已添加测试缓存: {content}").send(target)
+                
+            elif clear_opt := cache.options.get("clear"):
+                chat_logs = ChatLogs.load()
+                chat_logs.clear_logs(user_id, "cache")
+                await UniMessage.text("已清空缓存").send(target)
+                
+            elif list_opt := cache.options.get("list"):
+                storage_type = list_opt.args.get("type", "cache")
+                chat_logs = ChatLogs.load()
+                if storage_type == "cache":
+                    logs = chat_logs.get_logs(user_id, use_cache=True)
+                    count = chat_logs.get_cache_count(user_id)
+                    await UniMessage.text(f"缓存记录({count}条):\n" + 
+                        "\n".join(f"{log.rule}: {log.msg}" for log in logs)
+                    ).send(target)
+                else:
+                    logs = chat_logs.get_logs(user_id, use_cache=False)
+                    await UniMessage.text("主存储记录:\n" + 
+                        "\n".join(f"{log.rule}: {log.msg}" for log in logs)
+                    ).send(target)
+            return
+
