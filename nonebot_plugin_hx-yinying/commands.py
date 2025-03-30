@@ -17,6 +17,7 @@ chat_cmd = on_alconna(
         Args["content?", str],
         Option("help", help_text="显示帮助信息", alias=["帮助", "指令"]),
         Option("text", Args["content", str], help_text="直接对话内容"),
+        Option("refresh", help_text="刷新对话" ,alias=["重置","刷新对话","重置对话","刷新"])
     ),
     block=True
 )
@@ -116,7 +117,7 @@ async def handle_chat(event:Event,arp: Arparma, target: MsgTarget,
             return
 
 @config_cmd.handle()
-async def handle_config(bot:Bot,arp: Arparma, target: MsgTarget,
+async def handle_config(arp: Arparma, target: MsgTarget,
                        user_info: UserInfo = EventUserInfo()):
     """处理配置命令"""
     if not await check_admin_permission(user_info):
@@ -219,7 +220,10 @@ async def handle_model(event:Event,arp: Arparma, target: MsgTarget,
         await send_message(target, "[模型] 帮助:\nyinying.model list\n"
         "yinying.model switch <模型名称>\n",True)
     elif arp.find("list"):
-        await send_message(target, f"模型列表：\n{get_model_list()}",True)
+        model_list = "\n".join(
+                f"{i}. {m}" for i, m in enumerate(m.value for m in YinYingModelType)
+            )
+        await send_message(target, f"模型列表：\n{model_list}",True)
     elif models := arp.options.get("switch"):
         model = models.args.get("name")
         if model:
@@ -238,3 +242,14 @@ async def handle_char(event:Event,arp: Arparma, target: MsgTarget,
     # 显示帮助
     if arp.find("help"):
         await send_message(target, f"[角色] 帮助:\nyinying.char add <角色名称>\nyinying.char subscribe\n")
+    if adds := arp.options.get("add"):
+        name = adds.args.get("name")
+        if name:
+            #TODO: 实现添加角色逻辑
+            #msg = await add_char(event,name,user_info)
+            await send_message(target, "重构中...",True)
+        else:
+            await send_message(target, "[错误] 请指定角色名称")
+    elif subs := arp.options.get("subscribe"):
+        #TODO: 订阅角色
+        await send_message(target, "重构中....")

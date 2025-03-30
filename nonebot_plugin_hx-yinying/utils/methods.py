@@ -272,12 +272,43 @@ def get_model_list() -> str:
     model_list = [model.value for model in YinYingModelType]
     return "\n".join(f"- {model}" for model in model_list)
 
-async def switch_model(event: Event, model: str, user_info: UserInfo = EventUserInfo()) -> str:
-    """切换对话模型"""
+def get_model_by_identifier(identifier: str) -> Optional[str]:
+    """根据标识符获取完整的模型名称"""
+    valid_models = [m.value for m in YinYingModelType]
     try:
-        valid_models = [m.value for m in YinYingModelType]
-        if model not in valid_models:
-            return f"[错误] 无效的模型名称: {model}\n可用模型:\n{get_model_list()}"
+        index = int(identifier)
+        if 0 <= index < len(valid_models):
+            return valid_models[index]
+    except ValueError:
+        pass
+    identifier = identifier.lower()
+    model_map = {
+        "v2": "chatgpt-v2",
+        "v3": "chatgpt-v3",
+        "v4": "chatgpt-v4",
+        "cf": "cyberfurry-001",
+        "ecf": "easycyberfurry-001",
+    }
+    if model := model_map.get(identifier):
+        return model
+    if identifier in valid_models:
+        return identifier
+    return None
+
+async def switch_model(event: Event, model: str, user_info: UserInfo = EventUserInfo()) -> str:
+    """切换对话模型
+    
+    支持:
+    1. 数字索引: 0-4
+    2. 简写: v2, v3, v4, cf, ecf
+    3. 完整名称: chatgpt-v2, chatgpt-v3, chatgpt-v4, cyberfurry-001, easycyberfurry-001
+    """
+    try:
+        if not (full_model := get_model_by_identifier(model)):
+            model_list = "\n".join(
+                f"{i}. {m}" for i, m in enumerate(m.value for m in YinYingModelType)
+            )
+            return f"[错误] 无效的模型标识符: {model}\n可用模型:\n{model_list}"
         user_id = str(user_info.user_id)
         is_group, group_id = get_group_id(event)
         if is_group:
