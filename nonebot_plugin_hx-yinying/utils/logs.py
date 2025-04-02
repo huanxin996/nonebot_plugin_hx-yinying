@@ -55,7 +55,7 @@ class UserChatCache:
         """获取最近的记录"""
         return self.logs[-limit:]
 
-# 全局缓存管理器
+# 缓存管理器
 _global_cache: Dict[str, UserChatCache] = {}
     
 def get_user_cache(user_id: str) -> UserChatCache:

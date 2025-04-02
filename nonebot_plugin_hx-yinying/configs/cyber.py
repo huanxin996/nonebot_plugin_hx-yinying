@@ -5,7 +5,7 @@ from .globalvar import GlobalVars,logger,time
 
 @dataclass
 class CyberCharacter:
-    """赛博角色完整定义"""
+    """cyber角色完整定义"""
     system_prompt: str  # 系统提示词
     xml_data: Optional[str] = None  # XML格式数据
     creator: int = 3485462167  # 创建者ID
@@ -66,7 +66,7 @@ class CyberCharacter:
 
 @dataclass
 class CyberManager:
-    """赛博角色管理器"""
+    """cyber角色管理器"""
     characters: Dict[str, CyberCharacter] = field(default_factory=dict)
     
     @classmethod
@@ -167,7 +167,7 @@ class CyberContribution(CyberCharacter):
 
 @dataclass
 class CyberContributionManager:
-    """赛博角色投稿管理器"""
+    """cyber角色投稿管理器"""
     contributions: Dict[str, CyberContribution] = field(default_factory=dict)
     
     @classmethod
@@ -237,6 +237,7 @@ class CyberContributionManager:
             return None
             
         char = CyberContribution(
+            id=kwargs.get("id", 0),
             system_prompt=kwargs.get("system_prompt", ""),
             xml_data=kwargs.get("xml_data"),
             creator=contributor_id,

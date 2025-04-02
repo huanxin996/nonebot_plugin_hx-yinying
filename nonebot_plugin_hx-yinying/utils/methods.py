@@ -1,16 +1,29 @@
-import random
+import random,time
 from nonebot import get_driver
 from nonebot_plugin_userinfo import EventUserInfo, UserInfo
+from nonebot_plugin_alconna import AlconnaMatcher
 from nonebot_plugin_alconna.uniseg import UniMessage,MsgTarget
 from nonebot.adapters import Event
 from nonebot.log import logger
 from typing import Optional
 from ..configs.spconfig import GlobalConfig,UserConfig,GroupConfig
 from .logs import ChatLogs
-from ..api.methods import get_chat_response
+from ..api.methods import get_chat_response,CyberManager,EasyCyberManager,CyberCharacter,CyberContribution,CyberContributionManager,EasyCyberContributionManager
 from ..api.model import YinYingModelType
 
+VALID_AGES = {
+    "child": "幼年", 
+    "young": "青年",
+    "adult": "成年"
+}
 
+VALID_STYLES = {
+    "vivid": "活泼",
+    "sentiment": "富有情感",
+    "assistant": "助理",
+    "chilly": "冷酷无情",
+    "social_anxiety": "社恐"
+}
 
 def number_suiji():
     """
@@ -191,8 +204,103 @@ async def show_help(target: MsgTarget):
     其他功能请使用：
     yinying.model help: 模型管理
     yinying.char help: 角色管理
-    yinying.config help: 系统设置"""
+    yinying.config help: 系统设置
+    yinying.cyber help: cyber角色管理
+    yinying.easycyber help: easycyber角色管理
+    """
     await send_message(target, help_text)
+
+async def handle_character(
+    matcher: AlconnaMatcher,
+    name: str,
+    prompt: str,
+    is_public: bool,
+    user_id: str,
+    is_submit: bool = False
+) -> None:
+    """处理角色创建/投稿
+    
+    Args:
+        matcher: 命令匹配器
+        name: 角色名称
+        prompt: 角色设定
+        is_public: 是否公开
+        user_id: 创建者ID
+        is_submit: 是否为投稿
+    """
+    try:
+        cyber_manager = CyberManager.load()
+        
+        # 创建角色
+        char = CyberCharacter(
+            system_prompt=prompt.strip(),
+            creator=user_id,
+            public=is_public,
+            create_time=time.time()
+        )
+        
+        if is_submit:
+            # 投稿模式 - 进入审核队列
+            contrib = CyberContribution(
+                name=name,
+                character=char,
+                status="pending",  # pending/approved/rejected
+                submit_time=time.time()
+            )
+            cyber_manager.pending_characters[name] = contrib
+            await matcher.finish(f"[成功] 角色 {name} 已提交审核")
+        else:
+            # 直接添加模式
+            cyber_manager.characters[name] = char
+            await matcher.finish(f"[成功] 角色 {name} 添加完成")
+            
+        cyber_manager.save()
+        
+    except Exception as e:
+        logger.error(f"处理角色失败: {e}")
+        await matcher.finish(f"[错误] 处理失败: {e}")
+
+async def load_character(
+    matcher: AlconnaMatcher,
+    name: str, 
+    event: Event,
+    user_id: str
+) -> None:
+    """加载角色
+    
+    Args:
+        matcher: 命令匹配器
+        name: 角色名称
+        event: 事件对象
+        user_id: 用户ID
+    """
+    try:
+        cyber_manager = CyberManager.load()
+        
+        # 检查角色是否存在
+        if name not in cyber_manager.characters:
+            await matcher.finish(f"[错误] 角色 {name} 不存在")
+        
+        char = cyber_manager.characters[name]
+        
+        # 检查权限
+        if not char.public and char.creator != user_id:
+            await matcher.finish("[错误] 无权访问该角色")
+            
+        # 获取用户配置
+        user_config = UserConfig.load()
+        user_settings = user_config.get_user(user_id)
+        
+        # 更新当前角色
+        user_settings.character = name
+        user_settings.prompt = char.system_prompt
+        user_config.save()
+        
+        await matcher.finish(f"[成功] 已加载角色 {name}")
+        
+    except Exception as e:
+        logger.error(f"加载角色失败: {e}")
+        await matcher.finish(f"[错误] 加载失败: {e}")
 
 async def show_config_global(target: MsgTarget) -> None:
     """构建并发送全局配置信息"""
@@ -296,13 +404,7 @@ def get_model_by_identifier(identifier: str) -> Optional[str]:
     return None
 
 async def switch_model(event: Event, model: str, user_info: UserInfo = EventUserInfo()) -> str:
-    """切换对话模型
-    
-    支持:
-    1. 数字索引: 0-4
-    2. 简写: v2, v3, v4, cf, ecf
-    3. 完整名称: chatgpt-v2, chatgpt-v3, chatgpt-v4, cyberfurry-001, easycyberfurry-001
-    """
+    """切换对话模型"""
     try:
         if not (full_model := get_model_by_identifier(model)):
             model_list = "\n".join(
@@ -334,3 +436,38 @@ async def switch_model(event: Event, model: str, user_info: UserInfo = EventUser
     except Exception as e:
         logger.error(f"切换模型失败: {e}", exc_info=True)
         return False
+
+async def handle_model_subscribe(target:MsgTarget,event: Event, name: str, user_info: UserInfo) -> None:
+    """处理角色订阅"""
+    try:
+        is_group, group_id = get_group_id(event)
+        user_id = str(user_info.user_id)
+        if is_group:
+            group_config = GroupConfig.load()
+            current_model = group_config.get_group(group_id).use_model
+        else:
+            user_config = UserConfig.load()
+            current_model = user_config.get_user(user_id).private_model
+        if current_model not in ["cyberfurry-001", "easycyberfurry-001"]:
+            raise ValueError("只有在cyber或easycyber模型下才能订阅角色")
+        if current_model == "cyberfurry-001":
+            cyber_manager = CyberManager.load()
+        else:
+            cyber_manager = EasyCyberManager.load()
+        char = cyber_manager.get_character(name)
+        if not char:
+            await send_message(target, f"[错误] 角色 {name} 不存在")
+        if not char.public and char.creator != user_info.user_id:
+            await send_message(target, "[错误] 无权访问该角色")
+        if is_group:
+            group_config.update_group(group_id, character_in=name)
+        else:
+            user_config = UserConfig.load()
+            user_config.update_user(user_id, character_in=name)
+        return f"[成功] 已订阅角色 {name}"
+    except ValueError as e:
+        logger.warning(f"订阅角色失败: {e}")
+        return f"[错误] {str(e)}"
+    except Exception as e:
+        logger.error(f"订阅角色失败: {e}")
+        return f"[错误] 订阅失败: {e}"

@@ -3,8 +3,8 @@ from typing import Dict, Optional, Any, Union, Literal,Tuple
 from nonebot.log import logger
 from ..config import hxconfigs
 from .model import YinYingMessage,YinYingModelType,CharacterSet
-from ..configs.cyber import CyberManager
-from ..configs.easycyber import EasyCyberManager
+from ..configs.cyber import CyberManager,CyberCharacter,CyberContribution,CyberContributionManager
+from ..configs.easycyber import EasyCyberManager,EasyCyberContributionManager
 from ..configs.spconfig import GlobalConfig,GroupConfig,UserConfig
 from ..utils.logs import ChatLogs,_global_cache
 

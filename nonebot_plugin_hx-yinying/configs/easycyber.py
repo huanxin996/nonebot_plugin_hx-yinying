@@ -2,10 +2,9 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict
 from .globalvar import GlobalVars,logger,time
 
-
 @dataclass
 class EasyCyberCharacter:
-    """赛博角色定义"""
+    """easycyber角色定义"""
     cf_nickname: str
     cf_species: str 
     cf_con_age: str
@@ -50,7 +49,7 @@ class EasyCyberCharacter:
 
 @dataclass
 class EasyCyberManager:
-    """赛博角色管理器"""
+    """easycyber角色管理器"""
     characters: Dict[str, EasyCyberCharacter] = field(default_factory=dict)
 
     @classmethod
@@ -170,7 +169,7 @@ class EasyCyberContribution(EasyCyberCharacter):
 
 @dataclass
 class EasyCyberContributionManager:
-    """投稿角色管理器"""
+    """easycyber投稿角色管理器"""
     contributions: Dict[str, EasyCyberContribution] = field(default_factory=dict)
     
     @classmethod
